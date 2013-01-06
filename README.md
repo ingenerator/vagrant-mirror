@@ -14,11 +14,13 @@ bundled Vagrant package as this runs in isolation from your global ruby installa
 
 You can then add to your Vagrantfile like so:
 
+```ruby
     require 'vagrant-mirror'
     
     Vagrant::Config.run do | config |
       #.....
     end
+```
 
 Alternatively, add this repository alongside the Vagrantfile and require the library manually.
 
@@ -26,12 +28,14 @@ Alternatively, add this repository alongside the Vagrantfile and require the lib
 
 Include paths to mirror in your Vagrantfile like so:
 
+```ruby
     # To mirror the vagrant root path
     config.mirror.vagrant_root "/guest/path"
     
     # To mirror any arbitrary path
     config.mirror.folders "/guest/path", "/host/path"
-    
+```
+
 When you run `vagrant up` or `vagrant resume`, vagrant-mirror will:
 
 * Synchronise the host with the guest, transferring any missing or modified files by SCP
@@ -61,12 +65,11 @@ it from your `Vagrantfile`:
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
 
-== Acknowledgements
+## Acknowledgements
 
 The [vagrant-notify](https://github.com/fgrehm/vagrant-notify/) plugin was very useful in working out how to structure this plugin.
 
-== Copyright
+## Copyright
 
 Copyright (c) 2013 inGenerator Ltd. See LICENSE.txt for
 further details.
-
