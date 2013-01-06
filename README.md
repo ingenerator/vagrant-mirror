@@ -12,6 +12,14 @@ gem from guard so it should be fully cross-platform.
 The best option is to install the gem (note you will need to run `vagrant gem vagrant-mirror` if using the 
 bundled Vagrant package as this runs in isolation from your global ruby installation).
 
+You also need to install the correct filesystem driver for your host operating system:
+
+* For Windows - [WDM](https://github.com/Maher4Ever/wdm)
+* For Linux - [rb-inotify](https://github.com/nex3/rb-inotify)
+* For OS X - [rb-fsevent](https://github.com/thibaudgg/rb-fsevent)
+
+Unfortunately there is currently no way to specify these as platform-specific dependencies in the gemfile.
+
 You can then add to your Vagrantfile like so:
 
 ```ruby

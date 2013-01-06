@@ -13,4 +13,5 @@ doc
 .bundle
 
 # jeweler generated
-pkg
+pkgtmp/
+tmp/
