@@ -33,7 +33,7 @@ Include paths to mirror in your Vagrantfile like so:
     config.mirror.vagrant_root "/guest/path"
     
     # To mirror any arbitrary path
-    config.mirror.folders "/guest/path", "/host/path"
+    config.mirror.folder "/guest/path", "/host/path"
 ```
 
 When you run `vagrant up` or `vagrant resume`, vagrant-mirror will:
