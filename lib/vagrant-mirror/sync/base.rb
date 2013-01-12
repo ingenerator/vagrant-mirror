@@ -59,6 +59,39 @@ module Vagrant
           @connection.mtime(path)
         end
 
+        # Compares files on the host and the guest and transfers the newest
+        # to the other side.
+        #
+        # @param [String] Absolute host path
+        # @param [String] Absolute guest path
+        def compare_and_transfer(host_file, guest_file)
+
+          # Get the mtimes
+          host_time = host_mtime(host_file)
+          guest_time = guest_mtime(guest_file)
+
+          # Check what to do
+          if (host_time.nil? and guest_time.nil?) then
+            # Report an error
+            @ui.error("#{host_file} was not found on either the host or guest filesystem - cannot sync")
+          elsif (host_time == guest_time)
+            # Do nothing
+            return
+          elsif (guest_time.nil?)
+            # Transfer to guest
+            @connection.upload(host_file, guest_file)
+          elsif (host_time.nil?)
+            # Transfer to host
+            @connection.download(guest_file, host_file)
+          elsif (host_time > guest_time)
+            # Transfer to guest
+            @connection.upload(host_file, guest_file)
+          elsif (host_time < guest_time)
+            # Transfer to guest
+            @connection.download(guest_file, host_file)
+          end
+        end
+
       end
     end
   end

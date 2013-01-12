@@ -29,34 +29,8 @@ module Vagrant
           # Combine added and modified, they're the same for our purposes
           changed = added + modified
           changed.each do |file|
-            # Hold paths in local vars
-            host_file = host_path(file)
-            guest_file = guest_path(file)
-
-            # Get the mtimes
-            host_time = host_mtime(host_file)
-            guest_time = guest_mtime(guest_file)
-
-            # Check what to do
-            if (host_time.nil? and guest_time.nil?) then
-              # Report an error
-              @ui.error("#{file} was not found on either the host or guest filesystem - cannot sync")
-            elsif (host_time == guest_time)
-              # Do nothing
-              next
-            elsif (guest_time.nil?)
-              # Transfer to guest
-              @connection.upload(host_file, guest_file)
-            elsif (host_time.nil?)
-              # Transfer to host
-              @connection.download(guest_file, host_file)
-            elsif (host_time > guest_time)
-              # Transfer to guest
-              @connection.upload(host_file, guest_file)
-            elsif (host_time < guest_time)
-              # Transfer to guest
-              @connection.download(guest_file, host_file)
-            end
+            # Transfer the newest file to the other side, or do nothing
+            compare_and_transfer(host_path(file), guest_path(file))
           end
 
           # Process deleted files

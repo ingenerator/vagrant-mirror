@@ -117,7 +117,7 @@ describe Vagrant::Mirror::Sync::Changes do
 
         it "reports an error" do
           ui.should_receive(:error)
-            .with("#{test_file} was not found on either the host or guest filesystem - cannot sync")
+            .with("#{full_host_path} was not found on either the host or guest filesystem - cannot sync")
 
           subject.execute(source, added, modified, removed)
         end
