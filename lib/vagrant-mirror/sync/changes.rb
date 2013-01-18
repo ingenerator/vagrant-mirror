@@ -10,8 +10,7 @@
 # it will quietly fail if the file it is notified of has already been
 # deleted.
 #
-# @author Andrew Coulton < andrew@ingerator.com >
-
+# @author Andrew Coulton < andrew@ingenerator.com >
 module Vagrant
   module Mirror
     module Sync

@@ -1,8 +1,21 @@
+# Compares the contents of the host and guest paths and transfers any
+# missing or modified paths to the other side of the mirror. If a whole
+# directory is missing, uses recursive upload/download from the SFTP class,
+# otherwise it iterates over and compares the directory contents.
+#
+# This class does not detect deletions - if a file is missing on one side
+# of the mirror it will simply be replaced.
+#
+# @author Andrew Coulton < andrew@ingenerator.com >
 module Vagrant
   module Mirror
     module Sync
       class All < Base
 
+        # Compares a folder between guest and host, transferring any new or
+        # modified files in the right direction.
+        #
+        # @param [string] The base path to compare
         def execute(path)
           path = path.chomp('/')
           host_dir = host_path(path).chomp('/')
@@ -11,7 +24,14 @@ module Vagrant
           if !@connection.exists?(guest_dir)
             # This is the easy case, just let the connection handle recursion
             @connection.mkdir(guest_dir)
-            @connection.upload!(host_dir, guest_dir, @ui)
+            @connection.upload(host_dir, guest_dir)
+            return
+          end
+
+          if !File.exists?(host_dir)
+            # This is also easy, let the connection handle recursion
+            File.mkdir(host_dir)
+            @connection.download(guest_dir, host_dir)
             return
           end
 
@@ -29,9 +49,9 @@ module Vagrant
             guest_file = File.join(guest_dir, file)
 
             # Recurse for directories
-            if File.directory?(host_file)
-              puts "recurse to #{file}"
-              execute(file)
+            if File.directory?(host_file) \
+               or ( !File.exists?(host_file) and @connection.directory?(guest_file))
+              execute("#{path}/#{file}")
             end
 
             # Transfer new/modified files between host and guest

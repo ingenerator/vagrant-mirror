@@ -13,39 +13,69 @@ describe Vagrant::Mirror::Sync::All do
     # Explicity create subject to pass in mocks
     subject { Vagrant::Mirror::Sync::All.new(connection, host_root, guest_root, ui) }
 
-    shared_examples "transfer to guest with native recursion" do
-      it "creates the guest path" do
-        connection.stub(:upload!)
+    shared_examples "native recursive upload for dirs missing from guest" do | host_path, guest_path |
+      it "creates the missing folder on the guest" do
+        connection.stub(:upload)
         connection.should_receive(:mkdir)
-          .with(recursive_guest_path)
+          .with(guest_path)
           .and_return(true)
 
         subject.execute('/')
       end
 
-      it "uses native recursion to upload all" do
+      it "uses native recursion to upload to guest" do
         connection.stub(:mkdir)
-        connection.should_receive(:upload!)
-          .with(recursive_host_path, recursive_guest_path, ui)
+        connection.should_receive(:upload)
+          .with(host_path, guest_path)
+
+        subject.execute('/')
+      end
+    end
+
+    shared_examples "native recursive download for dirs missing from host" do | guest_path, host_path |
+      before (:each) do
+        connection.stub(:exists?).with(guest_path).and_return(true)
+      end
+
+      it "creates the missing folder on the host" do
+        connection.stub(:download)
+        File.should_receive(:mkdir)
+          .with(host_path)
+          .and_return(true)
+
+          subject.execute('/')
+      end
+
+      it "uses native recursion to download to host" do
+        File.stub(:mkdir)
+        connection.should_receive(:download)
+          .with(guest_path, host_path)
 
         subject.execute('/')
       end
     end
 
     context "when guest path is not present" do
-      let (:recursive_guest_path) { '/var/guest' }
-      let (:recursive_host_path)  { 'C:/host' }
-
       before (:each) do
         connection.should_receive(:exists?)
           .with('/var/guest')
           .and_return(false)
       end
 
-      it_behaves_like "transfer to guest with native recursion"
+      it_behaves_like "native recursive upload for dirs missing from guest", 'C:/host', '/var/guest'
     end
 
-    context "when guest path is present" do
+    context "when host path is not present" do
+      before (:each) do
+        File.should_receive(:exists?)
+          .with('C:/host')
+          .and_return(false)
+      end
+
+      it_behaves_like "native recursive download for dirs missing from host", '/var/guest', 'C:/host'
+    end
+
+    context "when both paths are present" do
 
       # Set up a host filesystem
       let ( :host_files ) do
@@ -60,7 +90,12 @@ describe Vagrant::Mirror::Sync::All do
           },
           'dir-both'       => {
             'file-both-same' => Time.at(mtime_old),
+            'file-host-mod'  => Time.at(mtime_new),
             'file-host-new'  => Time.at(mtime_new),
+            'file-guest-mod' => Time.at(mtime_old),
+            'dir-host-only'  => {
+              'file-host-new' => Time.at(mtime_new)
+            },
           }
         }
       end
@@ -78,7 +113,12 @@ describe Vagrant::Mirror::Sync::All do
           },
           'dir-both'       => {
             'file-both-same' => Time.at(mtime_old),
-            'file-host-new'  => Time.at(mtime_old),
+            'file-host-mod'  => Time.at(mtime_old),
+            'file-guest-new'  => Time.at(mtime_new),
+            'file-guest-mod' => Time.at(mtime_new),
+            'dir-guest-only'  => {
+              'file-guest-new' => Time.at(mtime_new)
+            },
           }
         }
       end
@@ -149,99 +189,92 @@ describe Vagrant::Mirror::Sync::All do
         connection.stub(:mkdir).as_null_object
         connection.stub(:upload!).as_null_object
         ui.stub(:error).as_null_object
+        File.stub(:mkdir).as_null_object
       end
 
-      context "in the root dir" do
+      shared_examples "folder synchronisation" do |host_base, guest_base|
         it "does not upload the . directory" do
           connection.should_not_receive(:upload)
-            .with('C:/host/.', '/var/guest/.')
+            .with("#{host_base}/.", "#{guest_base}/.")
 
           subject.execute('/')
         end
 
         it "does not upload the .. directory" do
           connection.should_not_receive(:upload)
-            .with('C:/host/..', '/var/guest/..')
+            .with("#{host_base}/..", "#{guest_base}/..")
 
           subject.execute('/')
         end
 
         it "does not download the . directory" do
           connection.should_not_receive(:download)
-            .with('C:/host/.', '/var/guest/.')
+            .with("#{guest_base}/.", "#{host_base}/.")
 
           subject.execute('/')
         end
 
         it "does not download the .. directory" do
           connection.should_not_receive(:download)
-            .with('C:/host/..', '/var/guest/..')
+            .with("#{guest_base}/..", "#{host_base}/..")
 
           subject.execute('/')
         end
 
         it "uploads new files on the host to the guest" do
           connection.should_receive(:upload)
-            .with('C:/host/file-host-new','/var/guest/file-host-new')
+            .with("#{host_base}/file-host-new", "#{guest_base}/file-host-new")
 
           subject.execute('/')
         end
 
         it "uploads changed files on the host to the guest" do
           connection.should_receive(:upload)
-            .with('C:/host/file-host-mod','/var/guest/file-host-mod')
+            .with("#{host_base}/file-host-mod", "#{guest_base}/file-host-mod")
 
           subject.execute('/')
         end
 
         it "downloads new files on the guest to the host" do
           connection.should_receive(:download)
-            .with('/var/guest/file-guest-new','C:/host/file-guest-new')
+            .with("#{guest_base}/file-guest-new", "#{host_base}/file-guest-new")
 
           subject.execute('/')
         end
 
         it "downloads changed files on the guest to the host" do
           connection.should_receive(:download)
-            .with('/var/guest/file-guest-mod','C:/host/file-guest-mod')
+            .with("#{guest_base}/file-guest-mod", "#{host_base}/file-guest-mod")
 
           subject.execute('/')
         end
 
         it "does not download unchanged files" do
           connection.should_not_receive(:download)
-            .with('/var/guest/file-both-same', 'C:/host/file-both-same')
+            .with("#{guest_base}/file-both-same", "#{host_base}/file-both-same")
 
           subject.execute('/')
         end
 
         it "does not upload unchanged files" do
           connection.should_not_receive(:upload)
-            .with('C:/host/file-both-same', '/var/guest/file-both-same')
+            .with("#{host_base}/file-both-same", "#{guest_base}/file-both-same")
 
           subject.execute('/')
         end
 
-        context "with directories" do
-          let (:recursive_guest_path) { '/var/guest/dir-host-only' }
-          let (:recursive_host_path)  { 'C:/host/dir-host-only' }
+        it_behaves_like "native recursive upload for dirs missing from guest", "#{host_base}/dir-host-only", "#{guest_base}/dir-host-only"
 
-          it_behaves_like "transfer to guest with native recursion"
-        end
-
-        it "transfers new directories on the guest to the host"
+        it_behaves_like "native recursive download for dirs missing from host", "#{guest_base}/dir-guest-only", "#{host_base}/dir-guest-only"
 
       end
 
+      context "in the root dir" do
+        it_behaves_like "folder synchronisation", 'C:/host', '/var/guest'
+      end
+
       context "one level down" do
-        it "uploads new files on the host to the guest"
-        it "uploads changed files on the host to the guest"
-        it "downloads new files on the guest to the host"
-        it "downloads changed files on the guest to the host"
-        it "does not download unchanged files"
-        it "does not upload unchanged files"
-        it "transfers new directories on the host to the guest"
-        it "transfers new directories on the guest to the host"
+        it_behaves_like "folder synchronisation", 'C:/host/dir-both', '/var/guest/dir-both'
       end
 
     end
