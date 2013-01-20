@@ -19,7 +19,7 @@ module Vagrant
         # @param [string] Host path to transfer
         # @param [string] Guest path to upload to
         def upload(host_path, guest_path)
-          connection.upload(host_path, guest_path)
+          connection.upload(host_path, guest_path, :progress => self)
           @ui.info(">> #{host_path}")
           return nil
         end
@@ -29,7 +29,7 @@ module Vagrant
         # @param [string] Guest path to transfer
         # @param [string] Host path to transfer to
         def download(guest_path, host_path)
-          connection.download(guest_path, host_path)
+          connection.download(guest_path, host_path, :progress => self)
           @ui.info("<< #{guest_path}")
           return nil
         end
@@ -75,16 +75,49 @@ module Vagrant
           return false
         end
 
+        # Creates a directory on the guest
+        #
+        # @param [string] Guest path to create
         def mkdir(path)
-          connection
+          connection.mkdir(path)
+          return nil
         end
 
+        # Gets the contents of a directory on the guest as an array
+        #
+        # @param [string] Guest path to list
+        # @return [array] The contents of the directory
         def dir_entries(path)
-          connection
+          connection.dir.entries(path)
         end
 
+        # Removes a file or directory from the guest
+        #
+        # @param [string] Guest path to remove
         def unlink(path)
-          connection
+          if directory?(path)
+            connection.rmdir(path)
+            @ui.warn("XX #{path}")
+          else
+            connection.remove(path)
+            @ui.warn("xx #{path}")
+          end
+          return nil
+        end
+
+        # Waits for any pending SFTP transfers to complete
+        def finish_transfers
+          connection.loop
+        end
+
+        # Upload/Download progress callback - only logs when all pending
+        # transfers have completed
+        #
+        # @param [Object] The uploader or downloader object
+        def on_finish(transfer)
+          if !connection.pending_requests.any?
+            @ui.info("All transfers completed")
+          end
         end
 
         protected

@@ -3,6 +3,7 @@ describe Vagrant::Mirror::Connection::SFTP do
   GUEST_PATH    = '/var/guest'
   GUEST_MISSING = '/var/guest/missing'
   GUEST_DIR     = '/var/guest/dir'
+  GUEST_EMPTY   = '/var/guest/empty'
 
   MTIME      = 1358703212
 
@@ -97,6 +98,7 @@ describe Vagrant::Mirror::Connection::SFTP do
         subject_method.call(subject)
       end
     end
+
   end
 
   describe "#connect" do
@@ -182,13 +184,19 @@ describe Vagrant::Mirror::Connection::SFTP do
     it_behaves_like "persistent connection", lambda {|subject| subject.upload(HOST_PATH, GUEST_PATH) }
 
     it "uploads asynchronously by SFTP" do
-      sftp.should_receive(:upload).with(HOST_PATH, GUEST_PATH)
+      sftp.should_receive(:upload).with(HOST_PATH, GUEST_PATH, anything())
 
       subject.upload(HOST_PATH, GUEST_PATH)
     end
 
     it "logs the upload" do
       ui.should_receive(:info).with(">> #{HOST_PATH}")
+
+      subject.upload(HOST_PATH, GUEST_PATH)
+    end
+
+    it "passes the class as progress monitor" do
+      sftp.should_receive(:upload).with(anything(), anything(), hash_including(:progress => subject))
 
       subject.upload(HOST_PATH, GUEST_PATH)
     end
@@ -202,13 +210,19 @@ describe Vagrant::Mirror::Connection::SFTP do
     it_behaves_like "persistent connection", lambda {|subject| subject.download(GUEST_PATH, HOST_PATH) }
 
     it "downloads asynchronously by SFTP" do
-      sftp.should_receive(:download).with(GUEST_PATH, HOST_PATH)
+      sftp.should_receive(:download).with(GUEST_PATH, HOST_PATH, anything())
 
       subject.download(GUEST_PATH, HOST_PATH)
     end
 
     it "logs the download" do
       ui.should_receive(:info).with("<< #{GUEST_PATH}")
+
+      subject.download(GUEST_PATH, HOST_PATH)
+    end
+
+    it "passes the class as progress monitor" do
+      sftp.should_receive(:download).with(anything(), anything(), hash_including(:progress => subject))
 
       subject.download(GUEST_PATH, HOST_PATH)
     end
@@ -279,29 +293,118 @@ describe Vagrant::Mirror::Connection::SFTP do
 
   describe "#mkdir" do
     it_behaves_like "persistent connection", lambda {|subject| subject.mkdir(GUEST_DIR) }
-    it "creates the directory"
-    it "logs the directory creation"
+
+    it "creates the directory" do
+      sftp.should_receive(:mkdir).with(GUEST_PATH)
+
+      subject.mkdir(GUEST_PATH)
+    end
   end
 
   describe "#dir_entries" do
+    before (:each) do
+        dir = double("Net::SFTP::Operations::Dir").as_null_object
+        sftp.stub(:dir).and_return dir
+        dir.stub(:entries) do | path |
+          case path
+            when GUEST_DIR
+              result = ['file1','file2','dir1']
+            when GUEST_MISSING
+              result = []
+            when GUEST_EMPTY
+              result = []
+            else
+              raise "Invalid path #{path} in mock dir.entries"
+          end
+          result
+        end
+    end
+
     it_behaves_like "persistent connection", lambda {|subject| subject.dir_entries(GUEST_DIR) }
 
     context "with an empty directory" do
-      it "returns an empty array"
+      it "returns an empty array" do
+        subject.dir_entries(GUEST_EMPTY).should be_empty
+      end
     end
 
-    context "with a directory of files" do
-      it "returns an array of files"
+    context "with an existing directory" do
+      it "returns an array of files and directories" do
+        subject.dir_entries(GUEST_DIR).should eq ['file1','file2','dir1']
+      end
     end
 
-    context "with a directory of files and directories" do
-      it "returns an array of files and directories"
+    context "with a missing directory" do
+      it "returns an empty array" do
+        subject.dir_entries(GUEST_MISSING).should be_empty
+      end
     end
   end
 
   describe "#unlink" do
     it_behaves_like "persistent connection", lambda {|subject| subject.unlink(GUEST_DIR) }
 
-    it "unlinks the file"
+    context "with a file" do
+      it "unlinks the file" do
+        sftp.should_receive(:remove).with(GUEST_PATH)
+
+        subject.unlink(GUEST_PATH)
+      end
+
+      it "logs the deletion" do
+        ui.should_receive(:warn).with("xx #{GUEST_PATH}")
+
+        subject.unlink(GUEST_PATH)
+      end
+    end
+
+    context "with a directory" do
+      it "unlinks the directory" do
+        sftp.should_receive(:rmdir).with(GUEST_DIR)
+
+        subject.unlink(GUEST_DIR)
+      end
+
+      it "logs the deletion" do
+        ui.should_receive(:warn).with("XX #{GUEST_DIR}")
+
+        subject.unlink(GUEST_DIR)
+      end
+    end
+  end
+
+  describe "#finish_transfers" do
+    it "waits for transfers to finish" do
+      sftp.should_receive(:loop)
+
+      subject.finish_transfers
+    end
+
+  end
+
+  describe "#on_finish" do
+    context "when other transfers running" do
+      before (:each) do
+        sftp.stub(:pending_requests).and_return({ :rq1 => 'request' })
+      end
+
+      it "does not log anything" do
+        ui.should_not_receive(:info)
+
+        subject.on_finish(nil)
+      end
+    end
+
+    context "when this is the final transfer" do
+      before (:each) do
+        sftp.stub(:pending_requests).and_return({})
+      end
+
+      it "logs the completion" do
+        ui.should_receive(:info).with("All transfers completed")
+
+        subject.on_finish(nil)
+      end
+    end
   end
 end
