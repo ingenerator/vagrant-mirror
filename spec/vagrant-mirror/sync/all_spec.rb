@@ -26,7 +26,7 @@ describe Vagrant::Mirror::Sync::All do
       it "uses native recursion to upload to guest" do
         connection.stub(:mkdir)
         connection.should_receive(:upload)
-          .with(host_path, guest_path)
+          .with(host_path, guest_path, true)
 
         subject.execute('/')
       end
@@ -49,7 +49,7 @@ describe Vagrant::Mirror::Sync::All do
       it "uses native recursion to download to host" do
         File.stub(:mkdir)
         connection.should_receive(:download)
-          .with(guest_path, host_path)
+          .with(guest_path, host_path, true)
 
         subject.execute('/')
       end
@@ -195,70 +195,70 @@ describe Vagrant::Mirror::Sync::All do
       shared_examples "folder synchronisation" do |host_base, guest_base|
         it "does not upload the . directory" do
           connection.should_not_receive(:upload)
-            .with("#{host_base}/.", "#{guest_base}/.")
+            .with("#{host_base}/.", "#{guest_base}/.", anything())
 
           subject.execute('/')
         end
 
         it "does not upload the .. directory" do
           connection.should_not_receive(:upload)
-            .with("#{host_base}/..", "#{guest_base}/..")
+            .with("#{host_base}/..", "#{guest_base}/..", anything())
 
           subject.execute('/')
         end
 
         it "does not download the . directory" do
           connection.should_not_receive(:download)
-            .with("#{guest_base}/.", "#{host_base}/.")
+            .with("#{guest_base}/.", "#{host_base}/.", anything())
 
           subject.execute('/')
         end
 
         it "does not download the .. directory" do
           connection.should_not_receive(:download)
-            .with("#{guest_base}/..", "#{host_base}/..")
+            .with("#{guest_base}/..", "#{host_base}/..", anything())
 
           subject.execute('/')
         end
 
         it "uploads new files on the host to the guest" do
           connection.should_receive(:upload)
-            .with("#{host_base}/file-host-new", "#{guest_base}/file-host-new")
+            .with("#{host_base}/file-host-new", "#{guest_base}/file-host-new", false)
 
           subject.execute('/')
         end
 
         it "uploads changed files on the host to the guest" do
           connection.should_receive(:upload)
-            .with("#{host_base}/file-host-mod", "#{guest_base}/file-host-mod")
+            .with("#{host_base}/file-host-mod", "#{guest_base}/file-host-mod", false)
 
           subject.execute('/')
         end
 
         it "downloads new files on the guest to the host" do
           connection.should_receive(:download)
-            .with("#{guest_base}/file-guest-new", "#{host_base}/file-guest-new")
+            .with("#{guest_base}/file-guest-new", "#{host_base}/file-guest-new", false)
 
           subject.execute('/')
         end
 
         it "downloads changed files on the guest to the host" do
           connection.should_receive(:download)
-            .with("#{guest_base}/file-guest-mod", "#{host_base}/file-guest-mod")
+            .with("#{guest_base}/file-guest-mod", "#{host_base}/file-guest-mod", false)
 
           subject.execute('/')
         end
 
         it "does not download unchanged files" do
           connection.should_not_receive(:download)
-            .with("#{guest_base}/file-both-same", "#{host_base}/file-both-same")
+            .with("#{guest_base}/file-both-same", "#{host_base}/file-both-same", anything())
 
           subject.execute('/')
         end
 
         it "does not upload unchanged files" do
           connection.should_not_receive(:upload)
-            .with("#{host_base}/file-both-same", "#{guest_base}/file-both-same")
+            .with("#{host_base}/file-both-same", "#{guest_base}/file-both-same", anything())
 
           subject.execute('/')
         end

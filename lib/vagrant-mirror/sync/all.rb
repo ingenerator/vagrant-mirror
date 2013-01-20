@@ -24,14 +24,14 @@ module Vagrant
           if !@connection.exists?(guest_dir)
             # This is the easy case, just let the connection handle recursion
             @connection.mkdir(guest_dir)
-            @connection.upload(host_dir, guest_dir)
+            @connection.upload(host_dir, guest_dir, true)
             return
           end
 
           if !File.exists?(host_dir)
             # This is also easy, let the connection handle recursion
             File.mkdir(host_dir)
-            @connection.download(guest_dir, host_dir)
+            @connection.download(guest_dir, host_dir, true)
             return
           end
 

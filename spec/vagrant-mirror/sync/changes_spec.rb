@@ -60,7 +60,7 @@ describe Vagrant::Mirror::Sync::Changes do
 
         it "transfers to the guest" do
           connection.should_receive(:upload)
-               .with("C:/host/#{test_file}", "/var/guest/#{test_file}")
+               .with("C:/host/#{test_file}", "/var/guest/#{test_file}", false)
 
           subject.execute(source, added, modified, removed)
         end
@@ -75,7 +75,7 @@ describe Vagrant::Mirror::Sync::Changes do
 
         it "transfers to the host" do
           connection.should_receive(:download)
-               .with("/var/guest/#{test_file}","C:/host/#{test_file}")
+               .with("/var/guest/#{test_file}","C:/host/#{test_file}", false)
 
           subject.execute(source, added, modified, removed)
         end
@@ -89,7 +89,7 @@ describe Vagrant::Mirror::Sync::Changes do
 
         it "transfers to the host" do
           connection.should_receive(:download)
-               .with("/var/guest/#{test_file}","C:/host/#{test_file}")
+               .with("/var/guest/#{test_file}","C:/host/#{test_file}", false)
 
           subject.execute(source, added, modified, removed)
         end
@@ -103,7 +103,7 @@ describe Vagrant::Mirror::Sync::Changes do
 
         it "transfers to the guest" do
           connection.should_receive(:upload)
-               .with("C:/host/#{test_file}","/var/guest/#{test_file}")
+               .with("C:/host/#{test_file}","/var/guest/#{test_file}", false)
 
           subject.execute(source, added, modified, removed)
         end

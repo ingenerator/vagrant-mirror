@@ -16,10 +16,11 @@ module Vagrant
 
         # Queues a file or directory for upload to the guest and logs the transfer
         #
-        # @param [string] Host path to transfer
-        # @param [string] Guest path to upload to
-        def upload(host_path, guest_path)
-          connection.upload(host_path, guest_path, :progress => self)
+        # @param [string]  Host path to transfer
+        # @param [string]  Guest path to upload to
+        # @param [boolean] Whether to transfer a whole directory recursively
+        def upload(host_path, guest_path, recursive)
+          connection.upload(host_path, guest_path, {:progress => self, :recursive => recursive})
           @ui.info(">> #{host_path}")
           return nil
         end
@@ -28,8 +29,9 @@ module Vagrant
         #
         # @param [string] Guest path to transfer
         # @param [string] Host path to transfer to
-        def download(guest_path, host_path)
-          connection.download(guest_path, host_path, :progress => self)
+        # @param [boolean] Whether to transfer a whole directory recursively
+        def download(guest_path, host_path, recursive)
+          connection.download(guest_path, host_path, {:progress => self, :recursive => recursive})
           @ui.info("<< #{guest_path}")
           return nil
         end
@@ -94,7 +96,7 @@ module Vagrant
         # Removes a file or directory from the guest
         #
         # @param [string] Guest path to remove
-        def unlink(path)
+        def delete(path)
           if directory?(path)
             connection.rmdir(path)
             @ui.warn("XX #{path}")

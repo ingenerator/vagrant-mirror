@@ -181,55 +181,88 @@ describe Vagrant::Mirror::Connection::SFTP do
   end
 
   describe "#upload" do
-    it_behaves_like "persistent connection", lambda {|subject| subject.upload(HOST_PATH, GUEST_PATH) }
+    it_behaves_like "persistent connection", lambda {|subject| subject.upload(HOST_PATH, GUEST_PATH, false) }
 
-    it "uploads asynchronously by SFTP" do
-      sftp.should_receive(:upload).with(HOST_PATH, GUEST_PATH, anything())
+    shared_examples "file or directory upload" do | recursive |
+      it "uploads asynchronously by SFTP" do
+        sftp.should_receive(:upload).with(HOST_PATH, GUEST_PATH, anything())
 
-      subject.upload(HOST_PATH, GUEST_PATH)
+        subject.upload(HOST_PATH, GUEST_PATH, recursive)
+      end
+
+      it "logs the upload" do
+        ui.should_receive(:info).with(">> #{HOST_PATH}")
+
+        subject.upload(HOST_PATH, GUEST_PATH, recursive)
+      end
+
+      it "passes the class as progress monitor" do
+        sftp.should_receive(:upload).with(anything(), anything(), hash_including(:progress => subject))
+
+        subject.upload(HOST_PATH, GUEST_PATH, recursive)
+      end
+
+      it "sets the recursive option" do
+        sftp.should_receive(:upload).with(anything(), anything(), hash_including(:recursive => recursive))
+
+        subject.upload(HOST_PATH, GUEST_PATH, recursive)
+      end
+
+      it "returns nil" do
+        subject.upload(HOST_PATH, GUEST_PATH, recursive).should be_nil
+      end
     end
 
-    it "logs the upload" do
-      ui.should_receive(:info).with(">> #{HOST_PATH}")
-
-      subject.upload(HOST_PATH, GUEST_PATH)
+    context "when recursive" do
+      it_behaves_like "file or directory upload", true
     end
 
-    it "passes the class as progress monitor" do
-      sftp.should_receive(:upload).with(anything(), anything(), hash_including(:progress => subject))
-
-      subject.upload(HOST_PATH, GUEST_PATH)
-    end
-
-    it "returns nil" do
-      subject.upload(HOST_PATH, GUEST_PATH).should be_nil
+    context "when not recursive" do
+      it_behaves_like "file or directory upload", false
     end
   end
 
   describe "#download" do
-    it_behaves_like "persistent connection", lambda {|subject| subject.download(GUEST_PATH, HOST_PATH) }
+    it_behaves_like "persistent connection", lambda {|subject| subject.download(GUEST_PATH, HOST_PATH, false) }
 
-    it "downloads asynchronously by SFTP" do
-      sftp.should_receive(:download).with(GUEST_PATH, HOST_PATH, anything())
+    shared_examples "file or directory download" do | recursive |
+      it "downloads asynchronously by SFTP" do
+        sftp.should_receive(:download).with(GUEST_PATH, HOST_PATH, anything())
 
-      subject.download(GUEST_PATH, HOST_PATH)
+        subject.download(GUEST_PATH, HOST_PATH, recursive)
+      end
+
+      it "sets the recursive option" do
+        sftp.should_receive(:download).with(anything(), anything(), hash_including(:recursive => recursive))
+
+        subject.download(HOST_PATH, GUEST_PATH, recursive)
+      end
+
+      it "logs the download" do
+        ui.should_receive(:info).with("<< #{GUEST_PATH}")
+
+        subject.download(GUEST_PATH, HOST_PATH, recursive)
+      end
+
+      it "passes the class as progress monitor" do
+        sftp.should_receive(:download).with(anything(), anything(), hash_including(:progress => subject))
+
+        subject.download(GUEST_PATH, HOST_PATH, recursive)
+      end
+
+      it "returns nil" do
+        subject.download(GUEST_PATH, HOST_PATH, recursive).should be_nil
+      end
     end
 
-    it "logs the download" do
-      ui.should_receive(:info).with("<< #{GUEST_PATH}")
-
-      subject.download(GUEST_PATH, HOST_PATH)
+    context "when recursive" do
+      it_behaves_like "file or directory download", true
     end
 
-    it "passes the class as progress monitor" do
-      sftp.should_receive(:download).with(anything(), anything(), hash_including(:progress => subject))
-
-      subject.download(GUEST_PATH, HOST_PATH)
+    context "when not recursive" do
+      it_behaves_like "file or directory download", false
     end
 
-    it "returns nil" do
-      subject.download(GUEST_PATH, HOST_PATH).should be_nil
-    end
   end
 
   describe "#exists?" do
@@ -341,34 +374,34 @@ describe Vagrant::Mirror::Connection::SFTP do
     end
   end
 
-  describe "#unlink" do
-    it_behaves_like "persistent connection", lambda {|subject| subject.unlink(GUEST_DIR) }
+  describe "#delete" do
+    it_behaves_like "persistent connection", lambda {|subject| subject.delete(GUEST_DIR) }
 
     context "with a file" do
-      it "unlinks the file" do
+      it "deletes the file" do
         sftp.should_receive(:remove).with(GUEST_PATH)
 
-        subject.unlink(GUEST_PATH)
+        subject.delete(GUEST_PATH)
       end
 
       it "logs the deletion" do
         ui.should_receive(:warn).with("xx #{GUEST_PATH}")
 
-        subject.unlink(GUEST_PATH)
+        subject.delete(GUEST_PATH)
       end
     end
 
     context "with a directory" do
-      it "unlinks the directory" do
+      it "deletes the directory" do
         sftp.should_receive(:rmdir).with(GUEST_DIR)
 
-        subject.unlink(GUEST_DIR)
+        subject.delete(GUEST_DIR)
       end
 
       it "logs the deletion" do
         ui.should_receive(:warn).with("XX #{GUEST_DIR}")
 
-        subject.unlink(GUEST_DIR)
+        subject.delete(GUEST_DIR)
       end
     end
   end
