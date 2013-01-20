@@ -3,6 +3,7 @@ PATH
   specs:
     vagrant-mirror (0.0.1)
       listen
+      net-sftp
       vagrant
 
 GEM
@@ -32,6 +33,8 @@ GEM
     method_source (0.8.1)
     net-scp (1.0.4)
       net-ssh (>= 1.99.1)
+    net-sftp (2.0.5)
+      net-ssh (>= 2.0.9)
     net-ssh (2.2.2)
     pry (0.9.10)
       coderay (~> 1.0.5)

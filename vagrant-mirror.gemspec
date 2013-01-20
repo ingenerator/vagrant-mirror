@@ -19,6 +19,7 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency 'vagrant'
   gem.add_dependency 'listen'
+  gem.add_dependency 'net-sftp'
 
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'rspec'
