@@ -1,5 +1,6 @@
 require 'vagrant'
 
+require 'vagrant-mirror/errors'
 require 'vagrant-mirror/version'
 require 'vagrant-mirror/config'
 
