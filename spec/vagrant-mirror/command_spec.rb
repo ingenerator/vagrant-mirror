@@ -2,7 +2,7 @@ describe Vagrant::Mirror::Command do
   let (:argv) { []  }
   let (:env)  { double("Vagrant::Environment").as_null_object }
   let (:vm)   { double("Vagrant::VM").as_null_object }
-  let (:ui)   { ("Vagrant::UI::Interface").as_null_object }
+  let (:ui)   { double("Vagrant::UI::Interface").as_null_object }
 
   before (:each) do
     env.stub(:primary_vm).and_return vm
