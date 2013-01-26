@@ -2,14 +2,14 @@
 
 [![Build Status](https://travis-ci.org/ingenerator/vagrant-mirror.png)](https://travis-ci.org/ingenerator/vagrant-mirror)
 
-A vagrant plugin that mirrors a folder between the host and guest, designed to get around the performance 
-issues of virtualbox shared folders and the headaches of NFS or Samba shares with a windows host and linux 
+A vagrant plugin that mirrors a folder between the host and guest, designed to get around the performance
+issues of virtualbox shared folders and the headaches of NFS or Samba shares with a windows host and linux
 guest. Tested with Windows XP and Vista hosts and Ubuntu 12.04 guest. However, it uses the [listen](https://rubygems.org/gems/listen)
 gem from guard so it should be fully cross-platform.
 
 ## Installation
 
-The best option is to install the gem (note you will need to run `vagrant gem vagrant-mirror` if using the 
+The best option is to install the gem (note you will need to run `vagrant gem vagrant-mirror` if using the
 bundled Vagrant package as this runs in isolation from your global ruby installation).
 
 You also need to install the correct filesystem driver for your host operating system:
@@ -24,7 +24,7 @@ You can then add to your Vagrantfile like so:
 
 ```ruby
     require 'vagrant-mirror'
-    
+
     Vagrant::Config.run do | config |
       #.....
     end
@@ -39,9 +39,9 @@ Include paths to mirror in your Vagrantfile like so:
 ```ruby
     # To mirror the vagrant root path
     config.mirror.vagrant_root "/guest/path"
-    
+
     # To mirror any arbitrary path
-    config.mirror.folder "/guest/path", "/host/path"
+    config.mirror.folder "/host/path", "/guest/path"
 ```
 
 When you run `vagrant up` or `vagrant resume`, vagrant-mirror will:
