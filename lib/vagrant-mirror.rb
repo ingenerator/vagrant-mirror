@@ -24,3 +24,12 @@ require 'vagrant-mirror/middleware/mirror'
 
 # Require the command
 require 'vagrant-mirror/command'
+
+# Register the config
+Vagrant.config_keys.register(:mirror) { Vagrant::Mirror::Config }
+
+# Register the command
+Vagrant.commands.register(:mirror) { Vagrant::Mirror::Command }
+
+# Add the sync middleware to the standard stacks
+

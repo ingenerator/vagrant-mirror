@@ -24,6 +24,8 @@ module Vagrant
           folders = env[:vm].config.mirror.folders
           if !folders.empty?
             synchronize(folders, env)
+          else
+            env[:ui].info("No vagrant-mirror mirrored folders configured for this box")
           end
           @app.call(env)
         end
