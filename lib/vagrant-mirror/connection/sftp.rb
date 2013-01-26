@@ -142,7 +142,6 @@ module Vagrant
         # Updates remote or local mtime and related properties when transfer
         # of an individual file completes
         def on_close(transfer, file)
-          puts file.inspect
 
           if (transfer.is_a?(Net::SFTP::Operations::Upload))
             # Set the remote mtime
