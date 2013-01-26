@@ -6,30 +6,7 @@
 module Vagrant
   module Mirror
     module Middleware
-      class Mirror
-
-        # Creates an instance
-        #
-        # @param [Object] The next middleware in the chain
-        # @param [Vagrant::Action::Environment] The environment
-        def initialize(app, env)
-          @app = app
-          @env = env
-        end
-
-        # Executes the middleware and then continues to the next middleware in the
-        # stack
-        #
-        # @param [Vagrant::Action::Environment] The environment
-        def call(env)
-          folders = env[:vm].config.mirror.folders
-          if !folders.empty?
-            mirror(folders, env)
-          else
-            env[:ui].info("No vagrant-mirror mirrored folders configured for this box")
-          end
-          @app.call(env)
-        end
+      class Mirror < Base
 
         protected
 
@@ -37,23 +14,18 @@ module Vagrant
         #
         # @param [Array] The folder pairs to synchronise
         # @param [Vagrant::Action::Environment] The environment
-        def mirror(folders, env)
+        def execute(mirrors, env)
           ui = env[:ui]
           ui.info("Beginning directory mirroring")
 
-          connection = Vagrant::Mirror::Connection::SFTP.new(env[:vm], ui)
+          connection = vm_sftp()
           threads = []
 
-          folders.each do | folder |
+          each_mirror(mirrors) do | host_path, guest_path |
             # Create a new main thread to poll for changes on each folder pairing
             threads << Thread.new do
-              if folder[:host_path] == :vagrant_root
-                host_path = env[:root_path]
-              else
-                host_path = folder[:host_path]
-              end
 
-              sync = Vagrant::Mirror::Sync::Changes.new(connection, host_path, folder[:guest_path], ui)
+              sync = Vagrant::Mirror::Sync::Changes.new(connection, host_path, guest_path, ui)
               Thread.current["queue"] = Queue.new
               host_listener = Vagrant::Mirror::Listen::Host.new(host_path, Thread.current["queue"])
 

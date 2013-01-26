@@ -5,30 +5,7 @@
 module Vagrant
   module Mirror
     module Middleware
-      class Sync
-
-        # Creates an instance
-        #
-        # @param [Object] The next middleware in the chain
-        # @param [Vagrant::Action::Environment] The environment
-        def initialize(app, env)
-          @app = app
-          @env = env
-        end
-
-        # Executes the middleware and then continues to the next middleware in the
-        # stack
-        #
-        # @param [Vagrant::Action::Environment] The environment
-        def call(env)
-          folders = env[:vm].config.mirror.folders
-          if !folders.empty?
-            synchronize(folders, env)
-          else
-            env[:ui].info("No vagrant-mirror mirrored folders configured for this box")
-          end
-          @app.call(env)
-        end
+      class Sync < Base
 
         protected
 
@@ -36,19 +13,14 @@ module Vagrant
         #
         # @param [Array] The folder pairs to synchronise
         # @param [Vagrant::Action::Environment] The environment
-        def synchronize(folders, env)
+        def execute(mirrors, env)
           ui = env[:ui]
           ui.info("Beginning directory synchronisation")
 
-          connection = Vagrant::Mirror::Connection::SFTP.new(env[:vm], ui)
+          connection = vm_sftp()
 
-          folders.each do | folder |
-            if folder[:host_path] == :vagrant_root
-              host_path = env[:root_path]
-            else
-              host_path = folder[:host_path]
-            end
-            sync = Vagrant::Mirror::Sync::All.new(connection, host_path, folder[:guest_path], ui)
+          each_mirror(mirrors) do | host_path, guest_path |
+            sync = Vagrant::Mirror::Sync::All.new(connection, host_path, guest_path, ui)
             sync.execute("/")
           end
 

@@ -18,6 +18,7 @@ require 'vagrant-mirror/listen/tcp'
 require 'vagrant-mirror/connection/sftp'
 
 # Require the middlewares
+require 'vagrant-mirror/middleware/base'
 require 'vagrant-mirror/middleware/guestinstall'
 require 'vagrant-mirror/middleware/sync'
 require 'vagrant-mirror/middleware/mirror'
