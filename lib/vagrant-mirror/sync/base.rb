@@ -79,16 +79,16 @@ module Vagrant
             return
           elsif (guest_time.nil?)
             # Transfer to guest
-            @connection.upload(host_file, guest_file, false)
+            @connection.upload(host_file, guest_file, host_time)
           elsif (host_time.nil?)
             # Transfer to host
-            @connection.download(guest_file, host_file, false)
+            @connection.download(guest_file, host_file, guest_time)
           elsif (host_time > guest_time)
             # Transfer to guest
-            @connection.upload(host_file, guest_file, false)
+            @connection.upload(host_file, guest_file, host_time)
           elsif (host_time < guest_time)
             # Transfer to guest
-            @connection.download(guest_file, host_file, false)
+            @connection.download(guest_file, host_file, guest_time)
           end
         end
 

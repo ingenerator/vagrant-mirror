@@ -7,6 +7,10 @@ describe Vagrant::Mirror::Connection::SFTP do
 
   MTIME      = 1358703212
 
+  # Hacky, but Net::SFTP doesn't expose the structs it passes to event callbacks
+  DummyLiveFile = Struct.new(:local, :remote)
+  DummyEntry = Struct.new(:remote, :local)
+
   # Common stubs for all examples
   # Allow any method calls and set expectations in the scenarios
   let(:vm)          { double("Vagrant::VM") }
@@ -181,88 +185,89 @@ describe Vagrant::Mirror::Connection::SFTP do
   end
 
   describe "#upload" do
-    it_behaves_like "persistent connection", lambda {|subject| subject.upload(HOST_PATH, GUEST_PATH, false) }
+    it_behaves_like "persistent connection", lambda {|subject| subject.upload(HOST_PATH, GUEST_PATH, Time.at(MTIME)) }
 
-    shared_examples "file or directory upload" do | recursive |
-      it "uploads asynchronously by SFTP" do
-        sftp.should_receive(:upload).with(HOST_PATH, GUEST_PATH, anything())
+    it "uploads asynchronously by SFTP" do
+      sftp.should_receive(:upload).with(HOST_PATH, GUEST_PATH, anything())
 
-        subject.upload(HOST_PATH, GUEST_PATH, recursive)
+      subject.upload(HOST_PATH, GUEST_PATH, Time.at(MTIME))
+    end
+
+    it "logs the upload" do
+      ui.should_receive(:info).with(">> #{HOST_PATH}")
+
+      subject.upload(HOST_PATH, GUEST_PATH, Time.at(MTIME))
+    end
+
+    it "passes the class as progress monitor" do
+      sftp.should_receive(:upload).with(anything(), anything(), hash_including(:progress => subject))
+
+      subject.upload(HOST_PATH, GUEST_PATH, Time.at(MTIME))
+    end
+
+    it "returns nil" do
+      subject.upload(HOST_PATH, GUEST_PATH, Time.at(MTIME)).should be_nil
+    end
+
+    context "on upload completion" do
+      let (:transfer) { double("Net::SFTP::Operations::Download").as_null_object }
+
+      before (:each) do
+        subject.upload(HOST_PATH, GUEST_PATH, Time.at(MTIME))
+
+        transfer.stub(:is_a?).and_return(false)
+        transfer.stub(:is_a?).with(Net::SFTP::Operations::Upload).and_return(true)
       end
 
-      it "logs the upload" do
-        ui.should_receive(:info).with(">> #{HOST_PATH}")
-
-        subject.upload(HOST_PATH, GUEST_PATH, recursive)
-      end
-
-      it "passes the class as progress monitor" do
-        sftp.should_receive(:upload).with(anything(), anything(), hash_including(:progress => subject))
-
-        subject.upload(HOST_PATH, GUEST_PATH, recursive)
-      end
-
-      it "sets the recursive option" do
-        sftp.should_receive(:upload).with(anything(), anything(), hash_including(:recursive => recursive))
-
-        subject.upload(HOST_PATH, GUEST_PATH, recursive)
-      end
-
-      it "returns nil" do
-        subject.upload(HOST_PATH, GUEST_PATH, recursive).should be_nil
+      it "sets the guest file mtime" do
+        sftp.should_receive(:setstat).with(GUEST_PATH, hash_including(:mtime => MTIME))
+        subject.on_close(transfer, DummyLiveFile.new(HOST_PATH, GUEST_PATH))
       end
     end
 
-    context "when recursive" do
-      it_behaves_like "file or directory upload", true
-    end
-
-    context "when not recursive" do
-      it_behaves_like "file or directory upload", false
-    end
   end
 
   describe "#download" do
-    it_behaves_like "persistent connection", lambda {|subject| subject.download(GUEST_PATH, HOST_PATH, false) }
+    it_behaves_like "persistent connection", lambda {|subject| subject.download(GUEST_PATH, HOST_PATH, Time.at(MTIME)) }
 
-    shared_examples "file or directory download" do | recursive |
-      it "downloads asynchronously by SFTP" do
-        sftp.should_receive(:download).with(GUEST_PATH, HOST_PATH, anything())
+    it "downloads asynchronously by SFTP" do
+      sftp.should_receive(:download).with(GUEST_PATH, HOST_PATH, anything())
 
-        subject.download(GUEST_PATH, HOST_PATH, recursive)
-      end
-
-      it "sets the recursive option" do
-        sftp.should_receive(:download).with(anything(), anything(), hash_including(:recursive => recursive))
-
-        subject.download(HOST_PATH, GUEST_PATH, recursive)
-      end
-
-      it "logs the download" do
-        ui.should_receive(:info).with("<< #{GUEST_PATH}")
-
-        subject.download(GUEST_PATH, HOST_PATH, recursive)
-      end
-
-      it "passes the class as progress monitor" do
-        sftp.should_receive(:download).with(anything(), anything(), hash_including(:progress => subject))
-
-        subject.download(GUEST_PATH, HOST_PATH, recursive)
-      end
-
-      it "returns nil" do
-        subject.download(GUEST_PATH, HOST_PATH, recursive).should be_nil
-      end
+      subject.download(GUEST_PATH, HOST_PATH, Time.at(MTIME))
     end
 
-    context "when recursive" do
-      it_behaves_like "file or directory download", true
+    it "logs the download" do
+      ui.should_receive(:info).with("<< #{GUEST_PATH}")
+
+      subject.download(GUEST_PATH, HOST_PATH, Time.at(MTIME))
     end
 
-    context "when not recursive" do
-      it_behaves_like "file or directory download", false
+    it "passes the class as progress monitor" do
+      sftp.should_receive(:download).with(anything(), anything(), hash_including(:progress => subject))
+
+      subject.download(GUEST_PATH, HOST_PATH, Time.at(MTIME))
     end
 
+    it "returns nil" do
+      subject.download(GUEST_PATH, HOST_PATH, Time.at(MTIME)).should be_nil
+    end
+
+    context "on download completion" do
+      let (:transfer) { double("Net::SFTP::Operations::Download").as_null_object }
+
+      before (:each) do
+        subject.download(GUEST_PATH, HOST_PATH, Time.at(MTIME))
+        transfer.stub(:is_a?).and_return(false)
+        transfer.stub(:is_a?).with(Net::SFTP::Operations::Download).and_return(true)
+      end
+
+      it "sets the host file mtime" do
+        File.should_receive(:utime).with(MTIME, MTIME, HOST_PATH)
+
+        subject.on_close(transfer, DummyEntry.new(GUEST_PATH, HOST_PATH))
+        sleep 0.2
+      end
+    end
   end
 
   describe "#exists?" do
@@ -430,6 +435,20 @@ describe Vagrant::Mirror::Connection::SFTP do
 
   describe "#close" do
     it "closes the connection"
+  end
+
+  describe "#on_close" do
+    context "with no pending host stats" do
+      it "does nothing"
+    end
+
+    context "with pending host stats" do
+      before(:each) do
+        subject.host_setstat_queue(HOST_PATH, {:mtime => MTIME})
+      end
+
+      it "sets the file stat"
+    end
   end
 
   describe "#on_finish" do

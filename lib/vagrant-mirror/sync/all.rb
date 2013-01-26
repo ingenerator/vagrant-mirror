@@ -22,15 +22,13 @@ module Vagrant
           guest_dir = guest_path(path).chomp('/')
 
           if !@connection.exists?(guest_dir)
-            # This is the easy case, just let the connection handle recursion
-            @connection.upload(host_dir, guest_dir, true)
-            return
+            # Create the guest directory
+            @connection.mkdir(guest_dir)
           end
 
           if !File.exists?(host_dir)
-            # This is also easy, let the connection handle recursion
-            @connection.download(guest_dir, host_dir, true)
-            return
+            # Create the host directory
+            FileUtils.mkdir_p(host_dir)
           end
 
           # If the guest path already exists, have to sync manually
@@ -45,15 +43,14 @@ module Vagrant
             # Get local paths
             host_file = File.join(host_dir, file)
             guest_file = File.join(guest_dir, file)
-
             # Recurse for directories
             if File.directory?(host_file) \
                or ( !File.exists?(host_file) and @connection.directory?(guest_file))
               execute("#{path}/#{file}")
+            else
+              # Transfer new/modified files between host and guest
+              compare_and_transfer(host_file, guest_file)
             end
-
-            # Transfer new/modified files between host and guest
-            compare_and_transfer(host_file, guest_file)
           end
 
         end
