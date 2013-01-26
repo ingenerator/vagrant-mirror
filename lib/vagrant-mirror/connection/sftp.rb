@@ -95,8 +95,12 @@ module Vagrant
         # @return [array] The contents of the directory
         def dir_entries(path)
           names = []
-          connection.dir.entries(path).each do | entry |
-            names << entry.name
+          begin
+            connection.dir.entries(path).each do | entry |
+              names << entry.name
+            end
+          rescue Net::SFTP::StatusException => e
+            raise unless e.code == Net::SFTP::Constants::StatusCodes::FX_NO_SUCH_FILE
           end
           return names
         end

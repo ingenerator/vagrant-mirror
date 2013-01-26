@@ -359,7 +359,7 @@ describe Vagrant::Mirror::Connection::SFTP do
                 net_sftp_file('dir1', {:permissions => 040755})
                 ]
             when GUEST_MISSING
-              result = []
+              raise status_exception(Net::SFTP::Constants::StatusCodes::FX_NO_SUCH_FILE)
             when GUEST_EMPTY
               result = []
             else
