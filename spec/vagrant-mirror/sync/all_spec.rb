@@ -14,17 +14,7 @@ describe Vagrant::Mirror::Sync::All do
     subject { Vagrant::Mirror::Sync::All.new(connection, host_root, guest_root, ui) }
 
     shared_examples "native recursive upload for dirs missing from guest" do | host_path, guest_path |
-      it "creates the missing folder on the guest" do
-        connection.stub(:upload)
-        connection.should_receive(:mkdir)
-          .with(guest_path)
-          .and_return(true)
-
-        subject.execute('/')
-      end
-
       it "uses native recursion to upload to guest" do
-        connection.stub(:mkdir)
         connection.should_receive(:upload)
           .with(host_path, guest_path, true)
 
@@ -37,17 +27,7 @@ describe Vagrant::Mirror::Sync::All do
         connection.stub(:exists?).with(guest_path).and_return(true)
       end
 
-      it "creates the missing folder on the host" do
-        connection.stub(:download)
-        File.should_receive(:mkdir)
-          .with(host_path)
-          .and_return(true)
-
-          subject.execute('/')
-      end
-
       it "uses native recursion to download to host" do
-        File.stub(:mkdir)
         connection.should_receive(:download)
           .with(guest_path, host_path, true)
 
