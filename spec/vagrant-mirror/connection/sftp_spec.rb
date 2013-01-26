@@ -415,6 +415,10 @@ describe Vagrant::Mirror::Connection::SFTP do
 
   end
 
+  describe "#close" do
+    it "closes the connection"
+  end
+
   describe "#on_finish" do
     context "when other transfers running" do
       before (:each) do

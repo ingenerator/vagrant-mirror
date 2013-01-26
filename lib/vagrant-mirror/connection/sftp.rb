@@ -112,6 +112,10 @@ module Vagrant
           connection.loop
         end
 
+        # Closes the SFTP connection
+        def close
+        end
+
         # Upload/Download progress callback - only logs when all pending
         # transfers have completed
         #
