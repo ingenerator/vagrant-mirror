@@ -1,4 +1,4 @@
-describe Vagrant::Mirror::Listen::TCP do
+describe Vagrant::Mirror::Listener::TCP do
   describe "#listen!" do
     it "connects to the host socket"
     it "listens to the directory"

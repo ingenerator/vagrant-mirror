@@ -9,7 +9,7 @@ describe Vagrant::Mirror::Middleware::Mirror do
   let (:connection)    { double("Vagrant::Mirror::Connection::SFTP").as_null_object }
   let (:syncchanges)   { double("Vagrant::Mirror::Sync::Changes").as_null_object }
   let (:queue)         { double("Queue").as_null_object }
-  let (:guard)         { double("Vagrant::Mirror::Listen::Host").as_null_object }
+  let (:guard)         { double("Vagrant::Mirror::Listener::Host").as_null_object }
 
   # Set basic stubs for shared mocks
   before (:each) do
@@ -23,7 +23,7 @@ describe Vagrant::Mirror::Middleware::Mirror do
 
     Vagrant::Mirror::Connection::SFTP.stub(:new).and_return(connection)
     Vagrant::Mirror::Sync::Changes.stub(:new).and_return(syncchanges)
-    Vagrant::Mirror::Listen::Host.stub(:new).and_return(guard)
+    Vagrant::Mirror::Listener::Host.stub(:new).and_return(guard)
     Queue.stub(:new).and_return(queue)
 
   end
@@ -88,7 +88,7 @@ describe Vagrant::Mirror::Middleware::Mirror do
         end
 
         it "creates a Guard listener" do
-          Vagrant::Mirror::Listen::Host.should_receive(:new)
+          Vagrant::Mirror::Listener::Host.should_receive(:new)
             .with(host_path, queue)
 
           subject.call(env)

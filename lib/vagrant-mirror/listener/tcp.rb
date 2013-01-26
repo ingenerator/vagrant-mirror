@@ -1,7 +1,7 @@
 module Vagrant
   module Mirror
-    module Listen
-      class Host
+    module Listener
+      class TCP
 
         def listen!
         end

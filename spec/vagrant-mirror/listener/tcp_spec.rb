@@ -1,4 +1,4 @@
-describe Vagrant::Mirror::Listen::TCP do
+describe Vagrant::Mirror::Listener::TCP do
   describe "#listen!" do
     it "opens a TCP server"
     it "listens on configured port"

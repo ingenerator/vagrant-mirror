@@ -1,6 +1,6 @@
 module Vagrant
   module Mirror
-    module Listen
+    module Listener
       class Guest
 
         def listen!

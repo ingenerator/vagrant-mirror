@@ -10,9 +10,9 @@ require 'vagrant-mirror/sync/changes'
 require 'vagrant-mirror/sync/all'
 
 # Require all the listeners for now, for specs
-require 'vagrant-mirror/listen/guest'
-require 'vagrant-mirror/listen/host'
-require 'vagrant-mirror/listen/tcp'
+require 'vagrant-mirror/listener/guest'
+require 'vagrant-mirror/listener/host'
+require 'vagrant-mirror/listener/tcp'
 
 # Require the connection
 require 'vagrant-mirror/connection/sftp'

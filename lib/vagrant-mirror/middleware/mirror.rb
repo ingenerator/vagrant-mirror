@@ -27,7 +27,7 @@ module Vagrant
 
               sync = Vagrant::Mirror::Sync::Changes.new(connection, host_path, guest_path, ui)
               Thread.current["queue"] = Queue.new
-              host_listener = Vagrant::Mirror::Listen::Host.new(host_path, Thread.current["queue"])
+              host_listener = Vagrant::Mirror::Listener::Host.new(host_path, Thread.current["queue"])
 
               Thread.current["host_listener_thread"] = host_listener.listen
 
