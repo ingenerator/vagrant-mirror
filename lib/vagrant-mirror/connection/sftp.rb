@@ -90,7 +90,11 @@ module Vagrant
         # @param [string] Guest path to list
         # @return [array] The contents of the directory
         def dir_entries(path)
-          connection.dir.entries(path)
+          names = []
+          connection.dir.entries(path).each do | entry |
+            names << entry.name
+          end
+          return names
         end
 
         # Removes a file or directory from the guest

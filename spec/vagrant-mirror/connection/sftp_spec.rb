@@ -335,13 +335,24 @@ describe Vagrant::Mirror::Connection::SFTP do
   end
 
   describe "#dir_entries" do
+    def net_sftp_file(name, attrs = {})
+      Net::SFTP::Protocol::V01::Name.new(
+        name,
+        name,
+        status_attributes(attrs))
+    end
+
     before (:each) do
         dir = double("Net::SFTP::Operations::Dir").as_null_object
         sftp.stub(:dir).and_return dir
         dir.stub(:entries) do | path |
           case path
             when GUEST_DIR
-              result = ['file1','file2','dir1']
+              result = [
+                net_sftp_file('file1'),
+                net_sftp_file('file2'),
+                net_sftp_file('dir1', {:permissions => 040755})
+                ]
             when GUEST_MISSING
               result = []
             when GUEST_EMPTY
@@ -365,6 +376,8 @@ describe Vagrant::Mirror::Connection::SFTP do
       it "returns an array of files and directories" do
         subject.dir_entries(GUEST_DIR).should eq ['file1','file2','dir1']
       end
+
+      it "caches the attributes"
     end
 
     context "with a missing directory" do
