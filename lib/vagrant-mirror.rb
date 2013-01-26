@@ -32,4 +32,8 @@ Vagrant.config_keys.register(:mirror) { Vagrant::Mirror::Config }
 Vagrant.commands.register(:mirror) { Vagrant::Mirror::Command }
 
 # Add the sync middleware to the standard stacks
+Vagrant.actions[:start].insert Vagrant::Action::VM::Provision, Vagrant::Mirror::Middleware::Sync
+Vagrant.actions[:resume].use Vagrant::Mirror::Middleware::Sync
 
+# Add the mirror middleware to the standard stacks
+Vagrant.actions[:start].use Vagrant::Mirror::Middleware::Mirror
