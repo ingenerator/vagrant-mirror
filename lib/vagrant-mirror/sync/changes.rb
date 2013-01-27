@@ -51,6 +51,9 @@ module Vagrant
               end
             end
           end
+
+          # Complete all transfers
+          @connection.finish_transfers
         end
       end
     end

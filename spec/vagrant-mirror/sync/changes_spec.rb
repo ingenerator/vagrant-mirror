@@ -1,7 +1,7 @@
 describe Vagrant::Mirror::Sync::Changes do
   describe "#execute" do
-    let(:connection)  { double("Vagrant::Mirror::Connection::SFTP") }
-    let(:ui)          { double("Vagrant::UI::Interface") }
+    let(:connection)  { double("Vagrant::Mirror::Connection::SFTP").as_null_object }
+    let(:ui)          { double("Vagrant::UI::Interface").as_null_object }
     let(:host_root)   { 'C:/host' }
     let(:guest_root)  { '/var/guest' }
 
@@ -65,6 +65,12 @@ describe Vagrant::Mirror::Sync::Changes do
           subject.execute(source, added, modified, removed)
         end
 
+        it "completes all transfers" do
+          connection.should_receive(:finish_transfers)
+
+          subject.execute(source, added, modified, removed)
+        end
+
       end
 
       context "when file is newer on guest" do
@@ -76,6 +82,12 @@ describe Vagrant::Mirror::Sync::Changes do
         it "transfers to the host" do
           connection.should_receive(:download)
                .with("/var/guest/#{test_file}","C:/host/#{test_file}", Time.at(mtime_new))
+
+          subject.execute(source, added, modified, removed)
+        end
+
+        it "completes all transfers" do
+          connection.should_receive(:finish_transfers)
 
           subject.execute(source, added, modified, removed)
         end
@@ -93,6 +105,12 @@ describe Vagrant::Mirror::Sync::Changes do
 
           subject.execute(source, added, modified, removed)
         end
+
+        it "completes all transfers" do
+          connection.should_receive(:finish_transfers)
+
+          subject.execute(source, added, modified, removed)
+        end
       end
 
       context "when file is missing on guest" do
@@ -104,6 +122,12 @@ describe Vagrant::Mirror::Sync::Changes do
         it "transfers to the guest" do
           connection.should_receive(:upload)
                .with("C:/host/#{test_file}","/var/guest/#{test_file}", Time.at(mtime_new))
+
+          subject.execute(source, added, modified, removed)
+        end
+
+        it "completes all transfers" do
+          connection.should_receive(:finish_transfers)
 
           subject.execute(source, added, modified, removed)
         end
@@ -196,6 +220,12 @@ describe Vagrant::Mirror::Sync::Changes do
 
           subject.execute(source, added, modified, removed)
         end
+
+        it "completes all transfers" do
+          connection.should_receive(:finish_transfers)
+
+          subject.execute(source, added, modified, removed)
+        end
       end
 
       context "when guest path does not exist" do
@@ -205,6 +235,11 @@ describe Vagrant::Mirror::Sync::Changes do
           connection.should_not_receive(:delete)
           ui.should_receive(:info)
             .with("#{test_file} was not found on guest - nothing to delete")
+
+          subject.execute(source, added, modified, removed)
+        end
+        it "completes all transfers" do
+          connection.should_receive(:finish_transfers)
 
           subject.execute(source, added, modified, removed)
         end
