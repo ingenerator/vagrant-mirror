@@ -36,4 +36,7 @@ Vagrant.commands.register(:mirror) { Vagrant::Mirror::Command }
 Vagrant.actions[:start].use Vagrant::Mirror::Middleware::Sync
 
 # Add the mirror middleware to the standard stacks
-Vagrant.actions[:start].insert Vagrant::VM::Provision, Vagrant::Mirror::Middleware::Mirror
+Vagrant.actions[:start].insert Vagrant::Action::VM::Provision, Vagrant::Mirror::Middleware::Mirror
+
+# Abort on unhandled exceptions in any thread
+Thread.abort_on_exception = true
