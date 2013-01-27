@@ -62,7 +62,7 @@ describe Vagrant::Mirror::Middleware::Sync do
         end
       end
 
-      shared_examples "folder synchronisation" do | host_path, guest_path, syncseq |
+      shared_examples "middleware folder sync" do | host_path, guest_path, syncseq |
         it "creates a sync all class" do
           Vagrant::Mirror::Sync::All.should_receive(:new)
             .with(connection, host_path, guest_path, ui)
@@ -118,7 +118,7 @@ describe Vagrant::Mirror::Middleware::Sync do
         end
 
         it_behaves_like "beginning transfers"
-        it_behaves_like "folder synchronisation", "c:/host", "/var/guest", 1
+        it_behaves_like "middleware folder sync", "c:/host", "/var/guest", 1
         it_behaves_like "completing transfers"
       end
 
@@ -136,7 +136,7 @@ describe Vagrant::Mirror::Middleware::Sync do
         end
 
         it_behaves_like "beginning transfers"
-        it_behaves_like "folder synchronisation", "c:/vagrant", "/var/vagrant", 1
+        it_behaves_like "middleware folder sync", "c:/vagrant", "/var/vagrant", 1
         it_behaves_like "completing transfers"
       end
 
@@ -157,8 +157,8 @@ describe Vagrant::Mirror::Middleware::Sync do
         end
 
         it_behaves_like "beginning transfers"
-        it_behaves_like "folder synchronisation", "c:/host1", "/var/guest1", 1
-        it_behaves_like "folder synchronisation", "c:/host2", "/var/guest2", 2
+        it_behaves_like "middleware folder sync", "c:/host1", "/var/guest1", 1
+        it_behaves_like "middleware folder sync", "c:/host2", "/var/guest2", 2
         it_behaves_like "completing transfers"
       end
 
