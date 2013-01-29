@@ -1,4 +1,7 @@
 require 'net/sftp'
+require 'vagrant-mirror/connection/statqueue/base'
+require 'vagrant-mirror/connection/statqueue/local'
+require 'vagrant-mirror/connection/statqueue/remote'
 
 module Vagrant
   module Mirror
@@ -8,8 +11,8 @@ module Vagrant
         def initialize(vm, ui)
           @vm = vm
           @ui = ui
-          @remote_stat_queue = Hash.new
-          @local_stat_queue = Hash.new
+          @remote_stats = StatQueue::Remote.new(self)
+          @local_stats = StatQueue::Local.new(self)
         end
 
         def connect
@@ -23,7 +26,7 @@ module Vagrant
         # @param [Time] Mtime to set on the uploaded file
         def upload(host_path, guest_path, mtime)
           connection.upload(host_path, guest_path, {:progress => self})
-          remote_stat_queue(guest_path, { :mtime => mtime.to_i, :atime => Time.new.to_i })
+          @remote_stats.queue(guest_path, { :mtime => mtime.to_i, :atime => Time.new.to_i })
           @ui.info(">> #{host_path}")
           return nil
         end
@@ -35,7 +38,7 @@ module Vagrant
         # @param [Time] Mtime to set on the downloaded file
         def download(guest_path, host_path, mtime)
           connection.download(guest_path, host_path, {:progress => self})
-          local_stat_queue(host_path, { :mtime => mtime.to_i })
+          @local_stats.queue(host_path, { :mtime => mtime.to_i })
           @ui.info("<< #{guest_path}")
           return nil
         end
@@ -145,68 +148,16 @@ module Vagrant
 
           if (transfer.is_a?(Net::SFTP::Operations::Upload))
             # Set the remote mtime
-            stat = remote_stat_queue(file.remote)
-            if !stat.nil?
-              connection.setstat(file.remote, stat)
-            end
+            @remote_stats.apply(file.remote)
           elsif (transfer.is_a?(Net::SFTP::Operations::Download))
             # Set the local mtime
-            stat = local_stat_queue(file.local)
-            if !stat.nil?
-              # We can't set the mtime here because the file is still open, defer it 100ms
-              Thread.new do
-                sleep 0.1
-                File.utime(stat[:mtime], stat[:mtime], file.local)
-              end
-            end
+            @local_stats.apply(file.local)
           else
             @ui.error("Unexpected transfer type passed to Vagrant::Mirror::Connection::SFTP.on_close")
           end
         end
 
         protected
-
-        # Manages a queue of stats to apply to local files once transfers complete.
-        # To push a stat onto the queue, call with file and stat arguments. To pop
-        # a stat off, call with just a filename - the method will return nil if there
-        # are no pending stats to apply.
-        #
-        # @param [String] Local filename
-        # @param [Hash]   Hash of attributes to apply
-        # @return [Hash]   Hash of attributes to apply
-        def local_stat_queue(file, stat = nil)
-          if stat.nil?
-            # Accessor
-            stat = @local_stat_queue.fetch(file, nil)
-            if !stat.nil?
-              @local_stat_queue.delete(file)
-            end
-            return stat
-          else
-            @local_stat_queue[file] = stat
-          end
-        end
-
-        # Manages a queue of stats to apply to remote files once transfers complete.
-        # To push a stat onto the queue, call with file and stat arguments. To pop
-        # a stat off, call with just a filename - the method will return nil if there
-        # are no pending stats to apply.
-        #
-        # @param [String] Remote filename
-        # @param [Hash]   Hash of attributes to apply
-        # @return [Hash]   Hash of attributes to apply
-        def remote_stat_queue(file, stat = nil)
-          if stat.nil?
-            # Accessor
-            stat = @remote_stat_queue.fetch(file, nil)
-            if !stat.nil?
-              @remote_stat_queue.delete(file)
-            end
-            return stat
-          else
-            @remote_stat_queue[file] = stat
-          end
-        end
 
         # Creates and returns a persistent SFTP connection to the guest
         # @return [Net::SFTP::Session] A persistent SFTP connection
