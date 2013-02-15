@@ -120,6 +120,18 @@ describe Vagrant::Mirror::Middleware::Sync do
         it_behaves_like "beginning transfers"
         it_behaves_like "middleware folder sync", "c:/host", "/var/guest", 1
         it_behaves_like "completing transfers"
+
+        context "when encountering a non-vagrant error" do
+          before (:each) do
+            Vagrant::Mirror::Connection::SFTP.stub(:new)
+              .with(vm, ui)
+              .and_raise(RuntimeError.new("whoops"))
+          end
+
+          it "converts to a Vagrant error" do
+            expect { subject.call(env) }.to raise_error(Vagrant::Mirror::Errors::Error, /whoops/)
+          end
+        end
       end
 
       context "when mirroring the vagrant root" do

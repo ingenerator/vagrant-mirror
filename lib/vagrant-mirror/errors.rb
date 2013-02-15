@@ -9,6 +9,15 @@ module Vagrant
           super
         end
       end
+
+      class Error < Vagrant::Errors::VagrantError
+        status_code(100)
+
+        def initialize(msg)
+          message = msg
+          super
+        end
+      end
     end
   end
 end

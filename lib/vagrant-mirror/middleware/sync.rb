@@ -17,15 +17,26 @@ module Vagrant
           ui = env[:ui]
           ui.info("Beginning directory synchronisation")
 
-          connection = vm_sftp()
+          begin
+            connection = vm_sftp()
 
-          each_mirror(mirrors) do | host_path, guest_path |
-            sync = Vagrant::Mirror::Sync::All.new(connection, host_path, guest_path, ui)
-            sync.execute("/")
+            each_mirror(mirrors) do | host_path, guest_path |
+              sync = Vagrant::Mirror::Sync::All.new(connection, host_path, guest_path, ui)
+              sync.execute("/")
+            end
+
+            connection.finish_transfers
+            connection.close
+          rescue RuntimeError => e
+            # Pass through Vagrant errors
+            if e.is_a? Vagrant::Errors::VagrantError
+              raise
+            end
+
+            # Convert to a vagrant error descendant so that the box is not cleaned up
+            raise Vagrant::Mirror::Errors::Error.new("Vagrant-mirror caught a #{e.class.name} - #{e.message}")
           end
 
-          connection.finish_transfers
-          connection.close
           ui.success("Completed directory synchronisation")
         end
 

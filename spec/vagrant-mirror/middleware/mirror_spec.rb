@@ -159,6 +159,18 @@ describe Vagrant::Mirror::Middleware::Mirror do
         it_behaves_like "beginning mirroring"
         it_behaves_like "processing changes", 'c:/host', '/var/guest'
         it_behaves_like "chained mirror middleware"
+
+        context "when encountering a non-vagrant error" do
+          before (:each) do
+            Vagrant::Mirror::Connection::SFTP.stub(:new)
+              .with(vm, ui)
+              .and_raise(RuntimeError.new("whoops"))
+          end
+
+          it "converts to a Vagrant error" do
+            expect { subject.call(env) }.to raise_error(Vagrant::Mirror::Errors::Error, /whoops/)
+          end
+        end
       end
 
       context "when mirroring the vagrant root" do
