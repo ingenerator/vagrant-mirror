@@ -49,7 +49,9 @@ module Vagrant
         # @return [boolean] Whether the path exists
         def exists?(path)
           begin
-            connection.stat!(path)
+            connection do | c |
+              c.stat!(path)
+            end
             return true
           rescue Net::SFTP::StatusException => e
             raise unless e.code == Net::SFTP::Constants::StatusCodes::FX_NO_SUCH_FILE
@@ -63,7 +65,9 @@ module Vagrant
         # @return [Time]  The mtime
         def mtime(path)
           begin
-            mtime = connection.stat!(path).mtime
+            mtime = connection do | c |
+              c.stat!(path).mtime
+            end
             return Time.at(mtime)
           rescue Net::SFTP::StatusException => e
             raise unless e.code == Net::SFTP::Constants::StatusCodes::FX_NO_SUCH_FILE
@@ -77,7 +81,10 @@ module Vagrant
         # @return [boolean] True for a directory, false for file or not found, nil if unknown
         def directory?(path)
           begin
-            return connection.stat!(path).directory?
+            stat = connection do | c |
+              c.stat!(path)
+            end
+            return stat.directory?
           rescue Net::SFTP::StatusException => e
             raise unless e.code == Net::SFTP::Constants::StatusCodes::FX_NO_SUCH_FILE
           end
@@ -159,35 +166,61 @@ module Vagrant
 
         protected
 
-        # Creates and returns a persistent SFTP connection to the guest
+        # Executes a command over a persistent SFTP connection, and handles any expected errors
+        # eg missing files, permissions, etc, that may be encountered.
         # @return [Net::SFTP::Session] A persistent SFTP connection
-        def connection
+        def connection(&block)
 
           if @connection && !@connection.closed?
             # Vagrant tries to send data over the socket here but this would
             # have to be blocking and hit performance - need to come
             # up with a better way to check the socket actually open?
+          else
+            # Get the vm connection options
+            ssh_info = @vm.ssh.info
+
+            # Build the SSH connection options
+            opts = {
+              :port                  => ssh_info[:port],
+              :keys                  => [ssh_info[:private_key_path]],
+              :keys_only             => true,
+              :user_known_hosts_file => [],
+              :paranoid              => false,
+              :config                => false,
+              :forward_agent         => ssh_info[:forward_agent]
+            }
+
+            # Connect to SFTP
+            @connection = Net::SFTP.start(ssh_info[:host], ssh_info[:username], opts)
+          end
+
+          # If there's no block, just return the connection
+          if !block
             return @connection
           end
 
-          # Get the vm connection options
-          ssh_info = @vm.ssh.info
+          # Execute the command until we succeed
+          retries = 3
+          begin
+            return block.call(@connection)
+          rescue RuntimeError => e
+            if (e.is_a? Net::SFTP::StatusException) && (e.code == Net::SFTP::Constants::StatusCodes::FX_NO_SUCH_FILE)
+              # Allow NO_SUCH_FILE errors to bubble up, we need them for exists and mtime methods
+              raise
+            end
 
-          # Build the SSH connection options
-          opts = {
-            :port                  => ssh_info[:port],
-            :keys                  => [ssh_info[:private_key_path]],
-            :keys_only             => true,
-            :user_known_hosts_file => [],
-            :paranoid              => false,
-            :config                => false,
-            :forward_agent         => ssh_info[:forward_agent]
-          }
+            # Otherwise log the error
+            @ui.error("Ignored #{e.class.name} - #{e.message}")
 
-          # Connect to SFTP
-          connection = Net::SFTP.start(ssh_info[:host], ssh_info[:username], opts)
+            # Then retry the operation
+            if retries > 0
+              retries -= 1
+              retry
+            end
 
-          @connection = connection
+            # And failing that, raise
+            raise
+          end
         end
 
       end

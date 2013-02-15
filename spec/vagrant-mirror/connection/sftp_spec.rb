@@ -16,6 +16,7 @@ describe Vagrant::Mirror::Connection::SFTP do
   let(:vm)          { double("Vagrant::VM") }
   let(:ui)          { double("Vagrant::UI::Interface").as_null_object }
   let(:sftp)        { double("Net::SFTP::Session").as_null_object }
+  let(:error_state) { false }
 
   # Helper to define an SFTP status exception
   def status_exception(code)
@@ -54,14 +55,26 @@ describe Vagrant::Mirror::Connection::SFTP do
     sftp.stub(:closed?).and_return false
 
     # Stub stat responses for the known paths
-    sftp.stub(:stat!).with(GUEST_PATH)
-          .and_return(status_attributes)
+    @error_state = error_state
+    sftp.stub(:stat!) do | path |
+      if @error_state == false
+        case path
+          when GUEST_PATH
+            result=status_attributes
+          when GUEST_MISSING
+            raise status_exception(Net::SFTP::Constants::StatusCodes::FX_NO_SUCH_FILE)
+          when GUEST_DIR
+            result=status_attributes({:permissions => 040755})
+        end
+      end
 
-    sftp.stub(:stat!).with(GUEST_MISSING)
-          .and_raise(status_exception(Net::SFTP::Constants::StatusCodes::FX_NO_SUCH_FILE))
-
-    sftp.stub(:stat!).with(GUEST_DIR)
-          .and_return(status_attributes({:permissions => 040755}))
+      if @error_state == :permissions_error
+          # Toggle the flag back so the next call is successful
+          @error_state = false
+          raise RuntimeError.new("open /home/vagrant/foo-bar: permission denied")
+      end
+      result
+    end
   end
 
   shared_examples "persistent connection" do | subject_method |
@@ -103,6 +116,26 @@ describe Vagrant::Mirror::Connection::SFTP do
       end
     end
 
+  end
+
+  shared_examples "recovering from transfer errors" do | subject_method, expect_result |
+    context "during stat!" do
+      context "when a file cannot be opened" do
+        let (:error_state) { :permissions_error }
+
+        it "reports the error" do
+          ui.should_receive(:error)
+
+          subject_method.call(subject)
+        end
+
+        it "logs the error"
+
+        it "returns the expected result" do
+          subject_method.call(subject).should eq expect_result
+        end
+      end
+    end
   end
 
   describe "#connect" do
@@ -273,6 +306,7 @@ describe Vagrant::Mirror::Connection::SFTP do
   describe "#exists?" do
 
     it_behaves_like "persistent connection", lambda {|subject| subject.exists?(GUEST_PATH) }
+    it_behaves_like "recovering from transfer errors", lambda {|subject| subject.exists?(GUEST_PATH) }, true
 
     context "with existing file" do
       it "returns true" do
@@ -289,6 +323,7 @@ describe Vagrant::Mirror::Connection::SFTP do
 
   describe "#mtime" do
     it_behaves_like "persistent connection", lambda {|subject| subject.mtime(GUEST_PATH) }
+    it_behaves_like "recovering from transfer errors", lambda {|subject| subject.mtime(GUEST_PATH) }, Time.at(MTIME)
 
     context "with existing file" do
       it "returns a Time object" do
@@ -309,6 +344,7 @@ describe Vagrant::Mirror::Connection::SFTP do
 
   describe "#directory?" do
     it_behaves_like "persistent connection", lambda {|subject| subject.directory?(GUEST_DIR) }
+    it_behaves_like "recovering from transfer errors", lambda {|subject| subject.directory?(GUEST_DIR) }, true
 
     context "with existing file" do
       it "returns false" do
