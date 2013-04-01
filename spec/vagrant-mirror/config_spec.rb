@@ -120,7 +120,6 @@ describe Vagrant::Mirror::Config do
     it "rejects folders with nil paths" do
       subject.folder nil, nil
       subject.validate(@env, @errors)
-puts @errors.errors
       @errors.errors.count.should eq 2
     end
 

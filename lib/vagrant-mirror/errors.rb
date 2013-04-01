@@ -18,6 +18,25 @@ module Vagrant
           super
         end
       end
+
+      class MultipleFoldersNotSupported < Vagrant::Errors::VagrantError
+        status_code(101)
+
+        def initialize(msg)
+          message = msg
+          super
+        end
+      end
+
+      class SharedFolderNotMapped < Vagrant::Errors::VagrantError
+        status_code(102)
+
+        def initialize(msg)
+          message = msg
+          super
+        end
+      end
+
     end
   end
 end

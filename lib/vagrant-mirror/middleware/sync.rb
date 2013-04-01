@@ -1,5 +1,5 @@
-# Executes a full sync between the host and guest instance based on the configuration
-# in the vagrantfile, copying new or changed files to the other side of the mirror.
+# Executes a full sync from the host to the guest instance based on the configuration
+# in the vagrantfile, copying new or changed files to the guest as required.
 #
 # @author Andrew Coulton < andrew@ingerator.com >
 module Vagrant
@@ -18,8 +18,29 @@ module Vagrant
           ui.info("Beginning directory synchronisation")
 
           begin
-            each_mirror(mirrors) do | host_path, guest_path |
-              # Sync
+            each_mirror(mirrors) do | host_path, guest_sf_path, mirror_config |
+              # Create any required symlinks
+              mirror_config[:symlinks].each do | relpath |
+                relpath.sub!(/^\//, '')
+                source = "#{guest_sf_path}/#{relpath}"
+                target = "#{mirror_config[:guest_path]}/#{relpath}"
+
+                # Find the parent directory - we have to do this with regexp as we don't have the
+                # right filesystem to use File.expand
+                dirs = /^(.*)(\/.+)$/.match(target)
+                if (dirs)
+                  target_dir = dirs[1]
+                else
+                  target_dir = '/'
+                end
+
+                # Create the parent directory and create the symlink
+                env[:vm].channel.sudo("mkdir -p #{target_dir} && ln -s #{source} #{target}")
+              end
+
+              # Trigger the sync on the remote host
+              rsync = Vagrant::Mirror::Rsync.new(env[:vm], guest_sf_path, host_path, mirror_config)
+              rsync.run('/')
             end
 
           rescue RuntimeError => e

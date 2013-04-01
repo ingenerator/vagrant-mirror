@@ -31,20 +31,31 @@ module Vagrant
 
         protected
 
-        # Iterates over a set of mirror configs Fetches the host path from a pair of folders, converting the :vagrant_root
-        # symbol to be the path on disk
+        # Iterates over a set of mirror configs, fetching the paths for the shared folder pair from
+        # on the guest and host and passing them together with the folder config to the passed block
         #
         # @param [Hash] The folder pair
-        # @return [String] The absolute host path for the folder
         def each_mirror(mirrors)
-          mirrors.each do | folders |
-            if folders[:host_path] == :vagrant_root
-              host_path = @env[:root_path]
-            else
-              host_path = folders[:host_path]
+          shared_folders = @env[:vm].config.vm.shared_folders
+
+          if (mirrors.count > 1)
+            raise Vagrant::Mirror::Errors::MultipleFoldersNotSupported.new("Sorry, vagrant-mirror doesn't support multiple base folders yet")
+          end
+
+          mirrors.each do | folder |
+            # Locate the shared folder pairing in the config
+            shared_folder = shared_folders[folder[:name]]
+
+            if shared_folder.nil?
+              raise Vagrant::Mirror::Errors::SharedFolderNotMapped.new("The folder #{folder[:name]} was not a valid Vagrant shared folder name")
             end
 
-            yield host_path, folders[:guest_path]
+            # Pull out the guest and host path
+            guest_path = shared_folder[:guestpath]
+            host_path = File.expand_path(shared_folder[:hostpath], @env[:root_path])
+
+            # Yield for the parent
+            yield host_path, guest_path, folder
           end
         end
 

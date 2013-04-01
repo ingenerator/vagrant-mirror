@@ -57,6 +57,7 @@ describe Vagrant::Mirror::Middleware::Mirror do
       shared_examples "processing changes" do | host_path, guest_path |
 
         it "creates a Guard listener" do
+          pending
           Vagrant::Mirror::Listener::Host.should_receive(:new)
             .with(host_path, queue)
 

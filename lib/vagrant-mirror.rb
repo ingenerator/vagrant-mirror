@@ -7,6 +7,9 @@ require 'vagrant-mirror/config'
 # Require the host listener
 require 'vagrant-mirror/listener/host'
 
+# Require the rsync wrapper
+require 'vagrant-mirror/rsync'
+
 # Require the middlewares
 require 'vagrant-mirror/middleware/base'
 require 'vagrant-mirror/middleware/sync'
