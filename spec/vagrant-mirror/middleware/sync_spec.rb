@@ -133,7 +133,7 @@ describe Vagrant::Mirror::Middleware::Sync do
       end
 
       it "creates a symlink on the guest" do
-        channel.should_receive(:sudo).with('mkdir -p /var/vagrant && ln -s /vagrant/logs /var/vagrant/logs')
+        channel.should_receive(:sudo).with('rm -f /var/vagrant/logs && mkdir -p /var/vagrant && ln -s /vagrant/logs /var/vagrant/logs')
 
         subject.call(env)
       end

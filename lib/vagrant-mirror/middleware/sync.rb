@@ -64,7 +64,7 @@ module Vagrant
 
                 # Create the parent directory and create the symlink
                 ui.info("Creating link from #{target} to #{source}")
-                env[:vm].channel.sudo("mkdir -p #{target_dir} && ln -s #{source} #{target}")
+                env[:vm].channel.sudo("rm -f #{target} && mkdir -p #{target_dir} && ln -s #{source} #{target}")
               end
 
               # Trigger the sync on the remote host
