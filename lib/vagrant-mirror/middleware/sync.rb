@@ -1,4 +1,5 @@
 require 'date'
+require 'fileutils'
 
 # Executes a full sync from the host to the guest instance based on the configuration
 # in the vagrantfile, copying new or changed files to the guest as required.
@@ -53,6 +54,12 @@ module Vagrant
                   target_dir = dirs[1]
                 else
                   target_dir = '/'
+                end
+
+                # Create the host directory if required
+                host_dir = "#{host_path}/#{relpath}"
+                if ( ! File.exists?(host_dir))
+                  FileUtils.mkdir_p(host_dir)
                 end
 
                 # Create the parent directory and create the symlink

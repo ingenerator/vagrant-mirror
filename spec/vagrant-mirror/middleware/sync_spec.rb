@@ -111,9 +111,25 @@ describe Vagrant::Mirror::Middleware::Sync do
     end
 
     context "when the mirror config includes symlinks" do
+      let (:host_path) { File.join(Dir.pwd, 'logs') }
+
       before (:each) do
         config.mirror.vagrant_root "/var/vagrant", { :symlinks => ['logs'] }
         config.vm.share_folder("v-root", "/vagrant", ".")
+
+        File.stub(:exists?).with(host_path).and_return true
+      end
+
+      context "if the host folder does not exist" do
+        let (:host_path) { File.join(Dir.pwd, 'logs') }
+
+        before (:each) do
+          File.stub(:exists?).with(host_path).and_return false
+        end
+
+        it "creates the folder on the host" do
+          FileUtils.stub(:mkdir_p).with(host_path)
+        end
       end
 
       it "creates a symlink on the guest" do
