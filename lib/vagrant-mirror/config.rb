@@ -7,50 +7,56 @@ module Vagrant
 
       # @return [Array] An array of hashes holding the details of folders to monitor
       attr_reader   :folders
-      
+
       def initialize
         @folders = []
       end
-      
-      # TCP port on the host that the server should listen for notifications from the guest on. Defaults to 8082.
-      # @return [Integer] the port number
-      def server_port
-        if @server_port.nil?
-          return 8082
-        end
-        @server_port
-      end
-      
-      # TCP port on the host that the server should listen for notifications from the guest on. Defaults to 8082 if not set.
-      # @param [Integer] the port number
-      def server_port=(server_port)
-        @server_port = server_port
-      end
-      
+
       # Validates the provided configuration
-      # @param [Vagrant::Environemnt] Vagrant environment instance
+      # @param [Vagrant::Environment] Vagrant environment instance
       # @param [Vagrant::Config::ErrorRecorder] Stack of errors in configuration
       def validate(env, errors)
-        errors.add("vagrant-mirror.server_port must be a valid port number") if !server_port.is_a? Integer
         folders.each do | folder |
           errors.add("vagrant-mirror cannot mirror an empty or nil host path") if (folder[:host_path].nil? || folder[:host_path].empty?)
           errors.add("vagrant-mirror cannot mirror an empty or nil guest path") if (folder[:guest_path].nil? || folder[:guest_path].empty?)
+          valid_opts = [:name, :guest_path, :delete, :beep, :exclude, :symlinks]
+          folder.each do | option, value |
+            errors.add("vagrant-mirror does not understand the option #{option}") unless valid_opts.include?(option)
+          end
         end
       end
-      
+
       # Shortcut to mirror the Vagrant root folder (where the Vagrantfile is stored) to a path on the guest
       # @param [String] Path on the guest to mirror to
-      def vagrant_root(guest_path)
-        folder(:vagrant_root, guest_path)
+      # @param [Hash]   Command options - see README.md for details
+      def vagrant_root(guest_path, options = {} )
+        folder('v-root', guest_path, options)
       end
-      
+
       # Mirror a folder between the host and the guest
-      # @param [String] Path on the host to mirror
-      # @param [String] Path on the guest to mirror
-      def folder(host_path, guest_path)
-        @folders << {
-          :host_path  => host_path,
-          :guest_path => guest_path}
+      # @param [String] Name of the shared folder to mirror as passed to the vagrant shared folder config
+      # @param [String] Path on the guest to mirror to
+      # @param [Hash]   Command options - see README.md for details
+      def folder(share_name, guest_path, options = {} )
+        # Add the default options
+        folder = {
+          :delete   => false,
+          :beep     => false,
+          :exclude  => [],
+          :symlinks => []
+        }.merge(options)
+
+        # If there are any symlinks, they need to be added to the rsync excludes
+        folder[:symlinks].each do | link_path |
+          folder[:exclude] << link_path
+        end
+
+        # Add the names to the hash
+        folder[:name] = share_name
+        folder[:guest_path] = guest_path
+
+        # Store the folder details
+        @folders << folder
       end
 
       # Custom merge method since some keys here are merged differently.

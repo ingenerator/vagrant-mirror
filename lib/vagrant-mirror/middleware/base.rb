@@ -48,13 +48,6 @@ module Vagrant
           end
         end
 
-        # Builds a Vagrant::Mirror::Connection::SFTP to the VM
-        #
-        # @return [Vagrant::Mirror::Connection::SFTP]
-        def vm_sftp
-          Vagrant::Mirror::Connection::SFTP.new(@env[:vm], @env[:ui])
-        end
-
       end
     end
   end

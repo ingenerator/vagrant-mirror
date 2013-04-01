@@ -37,11 +37,7 @@ describe Vagrant::Mirror::Command do
     end
 
     shared_examples "the monitor command" do
-      it "runs the guestinstall middleware with primary vm" do
-        vm.should_receive(:run_action).with(Vagrant::Mirror::Middleware::GuestInstall)
 
-        subject.execute
-      end
       it "runs the monitor middleware with primary vm" do
         vm.should_receive(:run_action).with(Vagrant::Mirror::Middleware::Mirror)
 

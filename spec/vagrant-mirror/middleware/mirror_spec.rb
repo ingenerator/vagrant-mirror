@@ -6,8 +6,6 @@ describe Vagrant::Mirror::Middleware::Mirror do
   let (:app)           { double("Object").as_null_object }
   let (:config)        { double("Object").as_null_object }
   let (:configmirror)  { double("Vagrant::Mirror::Config").as_null_object }
-  let (:connection)    { double("Vagrant::Mirror::Connection::SFTP").as_null_object }
-  let (:syncchanges)   { double("Vagrant::Mirror::Sync::Changes").as_null_object }
   let (:queue)         { double("Queue").as_null_object }
   let (:guard)         { double("Vagrant::Mirror::Listener::Host").as_null_object }
 
@@ -21,11 +19,8 @@ describe Vagrant::Mirror::Middleware::Mirror do
 
     app.stub(:call)
 
-    Vagrant::Mirror::Connection::SFTP.stub(:new).and_return(connection)
-    Vagrant::Mirror::Sync::Changes.stub(:new).and_return(syncchanges)
     Vagrant::Mirror::Listener::Host.stub(:new).and_return(guard)
     Queue.stub(:new).and_return(queue)
-
   end
 
   subject { Vagrant::Mirror::Middleware::Mirror.new(app, env) }
@@ -50,13 +45,6 @@ describe Vagrant::Mirror::Middleware::Mirror do
     context "with mirrored folders" do
 
       shared_examples "beginning mirroring" do
-        it "creates a connection to the guest" do
-          Vagrant::Mirror::Connection::SFTP.should_receive(:new)
-            .with(vm, ui)
-            .and_return(connection)
-
-          subject.call(env)
-        end
 
         it "logs the start of mirroring" do
           ui.should_receive(:info).with("Beginning directory mirroring")
@@ -64,28 +52,9 @@ describe Vagrant::Mirror::Middleware::Mirror do
           subject.call(env)
         end
 
-        it "opens a new TCP notification listener"
-
-        context "when the guest connection fails" do
-          it "logs the failure"
-          it "terminates the vagrant execution with an error"
-        end
-
-        context "when the TCP listener cannot start" do
-          it "logs the failure"
-          it "terminates the vagrant execution with an error"
-        end
-
       end
 
       shared_examples "processing changes" do | host_path, guest_path |
-        it "creates a sync changes class" do
-          Vagrant::Mirror::Sync::Changes.should_receive(:new)
-            .with(connection, host_path, guest_path, ui)
-            .and_return(syncchanges)
-
-          subject.call(env)
-        end
 
         it "creates a Guard listener" do
           Vagrant::Mirror::Listener::Host.should_receive(:new)
@@ -107,34 +76,19 @@ describe Vagrant::Mirror::Middleware::Mirror do
 
           before (:each) do
             queue.stub(:pop).and_return(
-              { :source => :host, :added => added, :modified => modified, :removed => removed },
-              { :source => :guest, :added => added, :modified => modified, :removed => removed },
+              { :added => added, :modified => modified, :removed => removed },
+              { :added => added, :modified => modified, :removed => removed },
               { :quit => true })
-
           end
 
-          it "synchronises the first changes" do
-            syncchanges.should_receive(:execute)
-              .with(:host, added, modified, removed)
+          it "synchronises the first changes"
 
-            subject.call(env)
-            sleep 0.2
-          end
-
-          it "synchronises the second changes" do
-            syncchanges.should_receive(:execute)
-              .with(:guest, added, modified, removed)
-
-            subject.call(env)
-            sleep 0.2
-          end
+          it "synchronises the second changes"
 
         end
 
         shared_examples "finishing mirroring" do
-          it "signals the TCP listener to quit"
           it "signals the Guard listener to quit"
-          it "waits for the TCP listener to quit"
           it "waits for the Guard listener to quit"
           it "processes remaining jobs in the queue"
           it "calls the next middleware"
@@ -152,7 +106,7 @@ describe Vagrant::Mirror::Middleware::Mirror do
       context "with defined paths" do
         before(:each) do
           configmirror.stub(:folders).and_return([
-            {:host_path => 'c:/host', :guest_path => '/var/guest' }
+            {:name => 'foo', :guest_path => '/var/guest' }
           ])
         end
 
@@ -162,21 +116,16 @@ describe Vagrant::Mirror::Middleware::Mirror do
 
         context "when encountering a non-vagrant error" do
           before (:each) do
-            Vagrant::Mirror::Connection::SFTP.stub(:new)
-              .with(vm, ui)
-              .and_raise(RuntimeError.new("whoops"))
           end
 
-          it "converts to a Vagrant error" do
-            expect { subject.call(env) }.to raise_error(Vagrant::Mirror::Errors::Error, /whoops/)
-          end
+          it "converts to a Vagrant error"
         end
       end
 
       context "when mirroring the vagrant root" do
         before (:each) do
           configmirror.stub(:folders).and_return([
-            {:host_path => :vagrant_root, :guest_path => '/var/vagrant' }
+            {:name  => 'v-root', :guest_path => '/var/vagrant' }
           ])
 
           env[:root_path] = 'c:/vagrant'

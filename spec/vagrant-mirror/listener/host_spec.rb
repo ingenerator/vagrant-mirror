@@ -63,14 +63,6 @@ describe Vagrant::Mirror::Listener::Host do
         subject.listen!
       end
 
-      it "marks that changes came from the host" do
-        queue.should_receive(:"<<")
-          .with(hash_including({
-            :source => :host,
-            }))
-
-        subject.listen!
-      end
     end
 
     context "with a close signal" do

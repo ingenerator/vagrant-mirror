@@ -46,9 +46,8 @@ module Vagrant
         @env.primary_vm.run_action(Vagrant::Mirror::Middleware::Sync)
       end
 
-      # Execute the GuestInstall and Mirror middlewares on the primary vm
+      # Execute the Mirror middleware on the primary vm
       def execute_monitor
-        @env.primary_vm.run_action(Vagrant::Mirror::Middleware::GuestInstall)
         @env.primary_vm.run_action(Vagrant::Mirror::Middleware::Mirror)
       end
 

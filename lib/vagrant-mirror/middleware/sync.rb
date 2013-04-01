@@ -18,15 +18,10 @@ module Vagrant
           ui.info("Beginning directory synchronisation")
 
           begin
-            connection = vm_sftp()
-
             each_mirror(mirrors) do | host_path, guest_path |
-              sync = Vagrant::Mirror::Sync::All.new(connection, host_path, guest_path, ui)
-              sync.execute("/")
+              # Sync
             end
 
-            connection.finish_transfers
-            connection.close
           rescue RuntimeError => e
             # Pass through Vagrant errors
             if e.is_a? Vagrant::Errors::VagrantError

@@ -35,14 +35,12 @@ module Vagrant
           ui.info("Beginning directory mirroring")
 
           begin
-            connection = vm_sftp()
             threads = []
 
             each_mirror(mirrors) do | host_path, guest_path |
               # Create a new main thread to poll for changes on each folder pairing
               threads << Thread.new do
 
-                sync = Vagrant::Mirror::Sync::Changes.new(connection, host_path, guest_path, ui)
                 Thread.current["queue"] = Queue.new
                 host_listener = Vagrant::Mirror::Listener::Host.new(host_path, Thread.current["queue"])
 
@@ -55,7 +53,7 @@ module Vagrant
                   if (change[:quit])
                     quit = true
                   else
-                    sync.execute(change[:source], change[:added], change[:modified], change[:removed])
+                    # Sync
                   end
                 end
               end

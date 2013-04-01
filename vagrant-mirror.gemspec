@@ -8,7 +8,7 @@ Gem::Specification.new do |gem|
   gem.version       = Vagrant::Mirror::VERSION
   gem.authors       = ["Andrew Coulton"]
   gem.email         = ["andrew@ingenerator.com"]
-  gem.description   = 'A Vagrant plugin that mirrors folders between guest and host by monitoring filesystem'
+  gem.description   = 'A Vagrant plugin that mirrors folders from host to guest by monitoring filesystem'
   gem.summary       = gem.description
   gem.homepage      = "https://github.com/ingenerator/vagrant-mirror"
 
@@ -19,7 +19,6 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency 'vagrant', '~>1.0.5'
   gem.add_dependency 'listen'
-  gem.add_dependency 'net-sftp', '~>2.0.0'
 
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'rspec'
