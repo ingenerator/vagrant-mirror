@@ -7,6 +7,23 @@ module Vagrant
     module Middleware
       class Sync < Base
 
+        # Loads the rest of the middlewares first, then finishes up by running
+        # the sync middleware. This is required because the core share_folders
+        # middleware does not mount the shares until the very end of the process
+        # and we need to run after that
+        #
+        # @param [Vagrant::Action::Environment] The environment
+        def call(env)
+          @app.call(env)
+
+          mirrors = env[:vm].config.mirror.folders
+          if !mirrors.empty?
+            execute(mirrors, env)
+          else
+            env[:ui].info("No vagrant-mirror mirrored folders configured for this box")
+          end
+        end
+
         protected
 
         # Synchronizes the folder pairs configured in the vagrantfile
