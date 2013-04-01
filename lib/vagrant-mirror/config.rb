@@ -17,7 +17,7 @@ module Vagrant
       # @param [Vagrant::Config::ErrorRecorder] Stack of errors in configuration
       def validate(env, errors)
         folders.each do | folder |
-          errors.add("vagrant-mirror cannot mirror an empty or nil host path") if (folder[:host_path].nil? || folder[:host_path].empty?)
+          errors.add("vagrant-mirror cannot mirror an empty or nil host path") if (folder[:name].nil? || folder[:name].empty?)
           errors.add("vagrant-mirror cannot mirror an empty or nil guest path") if (folder[:guest_path].nil? || folder[:guest_path].empty?)
           valid_opts = [:name, :guest_path, :delete, :beep, :exclude, :symlinks]
           folder.each do | option, value |

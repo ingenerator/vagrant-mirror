@@ -130,6 +130,13 @@ describe Vagrant::Mirror::Config do
       @errors.errors.empty?.should be_false
     end
 
+    it "validates with valid options" do
+      subject.vagrant_root "/var/guest", { :symlinks => [ 'logs'], :exclude => ['exclude'], :delete => true, :beep => true }
+      subject.validate(@env, @errors)
+
+      @errors.errors.empty?.should be_true
+    end
+
   end
 
   context "when merging configuration" do
