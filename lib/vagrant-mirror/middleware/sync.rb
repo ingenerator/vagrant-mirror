@@ -1,3 +1,5 @@
+require 'date'
+
 # Executes a full sync from the host to the guest instance based on the configuration
 # in the vagrantfile, copying new or changed files to the guest as required.
 #
@@ -32,10 +34,12 @@ module Vagrant
         # @param [Vagrant::Action::Environment] The environment
         def execute(mirrors, env)
           ui = env[:ui]
-          ui.info("Beginning directory synchronisation")
+          ui.info("Beginning directory synchronisation at " + DateTime.now.iso8601)
 
           begin
             each_mirror(mirrors) do | host_path, guest_sf_path, mirror_config |
+              ui.info("Synchronising for #{host_path}")
+
               # Create any required symlinks
               mirror_config[:symlinks].each do | relpath |
                 relpath.sub!(/^\//, '')
@@ -52,10 +56,12 @@ module Vagrant
                 end
 
                 # Create the parent directory and create the symlink
+                ui.info("Creating link from #{target} to #{source}")
                 env[:vm].channel.sudo("mkdir -p #{target_dir} && ln -s #{source} #{target}")
               end
 
               # Trigger the sync on the remote host
+              ui.info("Synchronising from #{guest_sf_path} to #{mirror_config[:guest_path]}")
               rsync = Vagrant::Mirror::Rsync.new(env[:vm], guest_sf_path, host_path, mirror_config)
               rsync.run('/')
             end
@@ -70,7 +76,7 @@ module Vagrant
             raise Vagrant::Mirror::Errors::Error.new("Vagrant-mirror caught a #{e.class.name} - #{e.message}")
           end
 
-          ui.success("Completed directory synchronisation")
+          ui.success("Completed directory synchronisation at " + DateTime.now.iso8601)
         end
 
       end
