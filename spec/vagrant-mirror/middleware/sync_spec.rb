@@ -80,7 +80,6 @@ describe Vagrant::Mirror::Middleware::Sync do
           .with(anything, anything, env[:root_path], anything)
           .and_return(rsync)
 
-        puts env.inspect
         subject.call(env)
       end
 
