@@ -28,9 +28,9 @@ describe Vagrant::Mirror::Middleware::Sync do
 
   end
 
-  subject { Vagrant::Mirror::Middleware::Sync.new(app, env) }
-
   describe "#call" do
+
+    subject { Vagrant::Mirror::Middleware::Sync.new(app, env) }
 
     shared_examples "chained middleware" do
       it "calls the next middleware" do

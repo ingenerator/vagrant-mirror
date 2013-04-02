@@ -33,9 +33,10 @@ describe Vagrant::Mirror::Middleware::Mirror do
     queue.stub(:pop).and_return({ :quit => true})
   end
 
-  subject { Vagrant::Mirror::Middleware::Mirror.new(app, env) }
-
   describe "#call" do
+
+    subject { Vagrant::Mirror::Middleware::Mirror.new(app, env) }
+
     shared_examples "chained mirror middleware" do
       it "calls the next middleware" do
         app.should_receive(:call).with(env)

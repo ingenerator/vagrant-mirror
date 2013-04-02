@@ -10,9 +10,10 @@ describe Vagrant::Mirror::Command do
     env.stub(:ui).and_return ui
   end
 
-  subject { Vagrant::Mirror::Command.new(argv, env) }
-
   describe "#execute" do
+
+    subject { Vagrant::Mirror::Command.new(argv, env) }
+
     shared_examples "cannot run in multivm" do
       before (:each) do
         env.stub(:multivm?).and_return(true)

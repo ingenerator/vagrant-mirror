@@ -2,13 +2,14 @@ describe Vagrant::Mirror::Listener::Host do
 
   let (:queue) { double("Queue").as_null_object }
 
-  subject { Vagrant::Mirror::Listener::Host.new('c:/host', queue) }
-
   before (:each) do
     Listen.stub(:to).as_null_object
   end
 
   describe "#listen!" do
+
+    subject { Vagrant::Mirror::Listener::Host.new('c:/host', queue) }
+
     it "listens to the host directory" do
       Listen.should_receive(:to).with('c:/host', anything())
 
@@ -71,6 +72,9 @@ describe Vagrant::Mirror::Listener::Host do
   end
 
   describe "#listen" do
+
+    subject { Vagrant::Mirror::Listener::Host.new('c:/host', queue) }
+
     let (:thread) { double("Thread") }
 
     before (:each) do

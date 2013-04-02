@@ -19,9 +19,9 @@ describe Vagrant::Mirror::Rsync do
     File.stub(:directory?).with('c:/vagrant/dir').and_return(true)
   end
 
-  subject { Vagrant::Mirror::Rsync.new(vm, guest_sf_path, host_path, mirror_config) }
-
   describe "#run" do
+
+    subject { Vagrant::Mirror::Rsync.new(vm, guest_sf_path, host_path, mirror_config) }
 
     shared_examples "running rsync to update the path" do | path, expect_source, expect_dest |
       context "with no exclude paths" do
