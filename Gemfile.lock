@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    vagrant-mirror (0.0.1)
+    vagrant-mirror (0.1.1.alpha)
       listen
       vagrant (~> 1.0.5)
 
