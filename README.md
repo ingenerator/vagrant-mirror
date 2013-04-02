@@ -1,6 +1,7 @@
 # Vagrant::Mirror
 
 [![Build Status](https://travis-ci.org/ingenerator/vagrant-mirror.png)](https://travis-ci.org/ingenerator/vagrant-mirror)
+[![Code Climate](https://codeclimate.com/github/ingenerator/vagrant-mirror.png)](https://codeclimate.com/github/ingenerator/vagrant-mirror)
 
 **This plugin is for the 1.0.x series of Vagrant and has not been updated to work with 1.1 and
 above. We plan to update it eventually, if you want it faster than that then contributions are
@@ -18,29 +19,50 @@ number of dependencies.
 
 ## Installation
 
-The best option is to install the gem (note you will need to run `vagrant gem vagrant-mirror` if
-using the bundled Vagrant package as this runs in isolation from your global ruby installation).
+You need to install the plugin as a gem within Vagrant's embedded Ruby environment. You will
+also require the appropriate listen filesystem driver to watch for changes. The plugin
+currently only has an alpha release available, so you need to specify --pre on the install
+command.
 
-You also need to install the correct filesystem driver for your host operating system:
+### On Windows
 
-* For Windows - [WDM](https://github.com/Maher4Ever/wdm)
-* For Linux - [rb-inotify](https://github.com/nex3/rb-inotify)
-* For OS X - [rb-fsevent](https://github.com/thibaudgg/rb-fsevent)
+On Windows, the [WDM](https://github.com/Maher4Ever/wdm) driver is recommended. Install like
+this:
 
-Unfortunately there is currently no way to specify these as platform-specific dependencies in the
-gemfile.
+```bash
+# Add the Ruby devkit to the Vagrant environment so that native extensions can build
+# If your vagrant install path is different you will need to edit this command
+c:\vagrant\vagrant\embedded\devkitvars.bat
 
-You can then add to your Vagrantfile like so:
+# Install the latest alpha release of the vagrant-mirror gem
+vagrant gem install vagrant-mirror --pre
 
-```ruby
-    require 'vagrant-mirror'
-
-    Vagrant::Config.run do | config |
-      #.....
-    end
+# Install the wdm gem
+vagrant gem install wdm
 ```
 
-Alternatively, add this repository alongside the Vagrantfile and require the library manually.
+### On Linux
+
+Vagrant-mirror is not tested on a linux host - though in theory it should work (the
+specs run on Travis and all pass, and listen is tested cross-platform). The 
+[rb-inotify](https://github.com/nex3/rb-inotify) driver is recommended.
+
+```bash
+vagrant gem install vagrant-mirror --pre
+vagrant gem install rb-inotify
+```
+
+If you have problems getting it working on linux, contributions are welcome.
+
+### On OS X
+
+Vagrant-mirror is not tested on OS X - though in theory it should work. The 
+[rb-fsevent](https://github.com/thibaudgg/rb-fsevent) driver is recommended.
+
+```bash
+vagrant gem install vagrant-mirror --pre
+vagrant gem install rb-inotify
+```
 
 ## Basic usage
 
@@ -55,10 +77,10 @@ Include paths to mirror in your Vagrantfile like so:
     config.mirror.folder "foo", "/guest/mirror/path"
 ```
 
-When you run `vagrant up` or `vagrant resume`, vagrant-mirror will:
+When you run `vagrant up` or `vagrant reload`, vagrant-mirror will:
 
 * Ensure that your guest has any shared folders required for the pair
-* Create any local symlinks required
+* Create any local symlinks required (see below)
 * Run rsync on the guest to copy from the virtualbox shared folder to the local guest path
 * Register with the local host filesystem for updates using using [listen](https://rubygems.org/gems/listen)
 
@@ -66,9 +88,9 @@ When changes are detected on the host, they will be notified by the listen gem. 
 detected, the host will trigger the guest to run rsync on the changed path to update the locally
 stored file.
 
-If you want to force a full resync, you can run `vagrant mirror-sync`.
+If you want to force a full resync, you can run `vagrant mirror sync`.
 
-If for some reason the mirror crashes you can just run `vagrant-mirror monitor` on the host to bring
+If for some reason the mirror crashes you can just run `vagrant mirror monitor` on the host to bring
 it back up.
 
 ## Advanced usage
@@ -89,6 +111,11 @@ the virtualbox shared folder?
 
 This will exclude the "/log" folder from rsync and symlink it directly to the shared folder.
 
+Under the hood, vagrant-mirror just uses rsync so if for some reason you want to update your
+host with a bigger set of changed files from the guest (perhaps you ran a script that modified
+your source code somehow) you can just SSH to the guest and run rsync to copy files from the 
+mirror folder back to the virtualbox share.
+
 ### Excluding paths
 
 Perhaps there are paths you don't require on your virtual machine. For example, syncing your docs
@@ -106,9 +133,9 @@ to the directory being mirrored.
 
 ### Propogating deletes
 
-By default, vagrant mirror transfers new files and folders but does not propogate deletes. This can
-lead to unwanted behaviour, in particular if your application on the guest indexes or autoloads all
-the files it finds. You can enable deletions with the following:
+By default, vagrant mirror sync transfers new files and folders but does not propogate deletes. 
+This can lead to unwanted behaviour, in particular if your application on the guest indexes or 
+autoloads all the files it finds. You can enable deletions with the following:
 
 ```ruby
     # To mirror the vagrant root path - the options hash is also available when sharing any folder
@@ -120,12 +147,18 @@ the files it finds. You can enable deletions with the following:
 You should ensure that your "exclude" configuration includes all the paths that may be present on
 the guest (build directories, cache, assets) as otherwise they will be deleted.
 
+**Note that the :delete option only controls whether rsync will delete unexpected files during 
+vagrant mirror sync. During active mirroring, if you delete a file on the host this will be
+detected by listen and the file will be deleted on the guest.**
+
 ### Notifications
 
 The time between updates is generally pretty fast, but it is nonzero. If you're working in fast
 cycles it can be that you rerun a command on the guest before your updated files have been
 transferred, which may be confusing. Avoid this by having vagrant-mirror issue a system beep whenever
-transfers complete.
+transfers complete. Note that every so often vagrant will drop the SSH connection and the first
+command on a new connection can take at least 4 seconds, subsequent commands should be significantly
+faster.
 
 ```ruby
     # To mirror the vagrant root path - the options hash is also available when sharing any folder
@@ -138,14 +171,16 @@ transfers complete.
 
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`) with specs
+3. Commit your changes (`git commit -am 'Add some feature'`) with specs. Changes without specs will 
+   not be merged.
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
 
 ## Acknowledgements
 
 The [vagrant-notify](https://github.com/fgrehm/vagrant-notify/) plugin was very useful in working
-out how to structure this plugin.
+out how to structure this plugin. And of course, none of this would be possible without the great
+work on vagrant itself, thanks to Mitchell for that.
 
 ## Copyright
 
