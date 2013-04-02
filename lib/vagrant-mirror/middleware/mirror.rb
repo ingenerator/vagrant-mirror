@@ -72,7 +72,13 @@ module Vagrant
                     # Add to the list of deletions with each of the modified and added files
                     changes = changes + change[:added] + change[:modified]
                     changes.each do | relpath |
+                      ui.info(">> #{relpath}")
                       rsync.run(relpath)
+                    end
+
+                    # Beep if configured
+                    if (mirror_config[:beep])
+                      print "\a"
                     end
                   end
                 end
