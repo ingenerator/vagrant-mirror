@@ -34,10 +34,10 @@ describe Vagrant::Mirror::Rsync do
 
       context "with exclude paths" do
         let (:mirror_config) { { :name => 'v-root', :guest_path => '/var/vagrant', :delete => false,
-                           :exclude => ['.git', 'cache'], :beep => false, :symlinks => [] } }
+                           :exclude => ['/.git', 'cache'], :beep => false, :symlinks => [] } }
 
         it "runs the expected rsync command"  do
-          channel.should_receive(:sudo).with("rsync -av --exclude '.git' --exclude 'cache' #{expect_source} #{expect_dest}")
+          channel.should_receive(:sudo).with("rsync -av --exclude '/.git' --exclude 'cache' #{expect_source} #{expect_dest}")
 
           subject.run(path)
         end

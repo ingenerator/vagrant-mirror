@@ -114,7 +114,7 @@ describe Vagrant::Mirror::Middleware::Sync do
       let (:host_path) { File.join(Dir.pwd, 'logs') }
 
       before (:each) do
-        config.mirror.vagrant_root "/var/vagrant", { :symlinks => ['logs'] }
+        config.mirror.vagrant_root "/var/vagrant", { :symlinks => ['/logs'] }
         config.vm.share_folder("v-root", "/vagrant", ".")
 
         File.stub(:exists?).with(host_path).and_return true
@@ -137,6 +137,15 @@ describe Vagrant::Mirror::Middleware::Sync do
 
         subject.call(env)
       end
+
+      it "does not modify the excludes config passed to rsync" do
+        Vagrant::Mirror::Rsync.should_receive(:new)
+          .with(anything, anything, anything, hash_including({ :exclude => [ '/logs' ]}))
+          .and_return(rsync)
+
+        subject.call(env)
+      end
+
     end
 
     context "when the mirrored config includes invalid shared folders" do

@@ -42,7 +42,9 @@ module Vagrant
               ui.info("Synchronising for #{host_path}")
 
               # Create any required symlinks
-              mirror_config[:symlinks].each do | relpath |
+              mirror_config[:symlinks].each do | origpath |
+                # Copy the path so that it is not altered elsewhere, then strip any leading /
+                relpath = origpath.dup
                 relpath.sub!(/^\//, '')
                 source = "#{guest_sf_path}/#{relpath}"
                 target = "#{mirror_config[:guest_path]}/#{relpath}"
