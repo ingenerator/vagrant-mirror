@@ -15,18 +15,21 @@ module Vagrant
           @env = env
         end
 
-        # Executes the middleware and then continues to the next middleware in the
-        # stack
+        # Loads the rest of the middlewares first, then finishes up by running
+        # our middleware. This is required because the core share_folders and
+        # provision middlewares don not mount the shares until the very end of
+        # the process and we need to run after that
         #
         # @param [Vagrant::Action::Environment] The environment
         def call(env)
+          @app.call(env)
+
           mirrors = env[:vm].config.mirror.folders
           if !mirrors.empty?
             execute(mirrors, env)
           else
             env[:ui].info("No vagrant-mirror mirrored folders configured for this box")
           end
-          @app.call(env)
         end
 
         protected

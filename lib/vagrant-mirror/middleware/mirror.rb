@@ -8,22 +8,6 @@ module Vagrant
     module Middleware
       class Mirror < Base
 
-        # Loads the rest of the middlewares first, then finishes up by running
-        # the mirror middleware. This allows the listener to start after the
-        # instance has been provisioned.
-        #
-        # @param [Vagrant::Action::Environment] The environment
-        def call(env)
-          @app.call(env)
-
-          mirrors = env[:vm].config.mirror.folders
-          if !mirrors.empty?
-            execute(mirrors, env)
-          else
-            env[:ui].info("No vagrant-mirror mirrored folders configured for this box")
-          end
-        end
-
         protected
 
         # Mirrors the folder pairs configured in the vagrantfile
