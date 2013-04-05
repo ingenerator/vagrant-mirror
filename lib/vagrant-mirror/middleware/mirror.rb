@@ -55,26 +55,30 @@ module Vagrant
                   if (change[:quit])
                     quit = true
                   else
+
                     # Handle removed files first - guard sometimes flagged as deleted when they aren't
                     # So we first check if the file has been deleted on the host. If so, we delete on
                     # the guest, otherwise we add to the list to rsync in case there are changes
-                    changes = []
-                    change[:removed].each do | relpath |
-                      if (File.exists?(File.join(host_path, relpath)))
-                        changes << relpath
-                      else
-                        target = "#{mirror_config[:guest_path]}/#{relpath}"
+                    if (change[:event] == :removed)
+                      unless File.exists?(File.join(host_path, change[:path]))
+                        # Delete the file on the guest
+                        target = "#{mirror_config[:guest_path]}/#{change[:path]}"
                         ui.warn("XX Deleting #{target}")
                         env[:vm].channel.sudo("rm #{target}")
+
+                        # Beep if configured
+                        if (mirror_config[:beep])
+                          print "\a"
+                        end
+
+                        # Move to the next file
+                        next
                       end
                     end
 
-                    # Add to the list of deletions with each of the modified and added files
-                    changes = changes + change[:added] + change[:modified]
-                    changes.each do | relpath |
-                      ui.info(">> #{relpath}")
-                      rsync.run(relpath)
-                    end
+                    # Otherwise, run rsync on the file
+                    ui.info(">> #{change[:path]}")
+                    rsync.run(change[:path])
 
                     # Beep if configured
                     if (mirror_config[:beep])

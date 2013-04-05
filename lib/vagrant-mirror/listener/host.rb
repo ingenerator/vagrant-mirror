@@ -18,12 +18,20 @@ module Vagrant
         # Makes a blocking call to Guard to listen on the configured path
         def listen!
           Listen.to(@path, :relative_paths => true) do | modified, added, removed |
-            @queue << {
-              :source   => :host,
-              :added    => added,
-              :modified => modified,
-              :removed  => removed
-            }
+
+            # Add each reported file to the queue
+            modified.each do | path |
+              @queue << { :event => :modified, :path => path }
+            end
+
+            added.each do | path |
+              @queue << { :event => :added, :path => path }
+            end
+
+            removed.each do | path |
+              @queue << { :event => :removed, :path => path }
+            end
+
           end
         end
 

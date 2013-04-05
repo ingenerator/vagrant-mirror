@@ -122,52 +122,45 @@ describe Vagrant::Mirror::Middleware::Mirror do
 
       context "with notifications in the queue" do
 
-        let (:added)     { ['added'] }
-        let (:modified)  { ['modified','modified2'] }
-        let (:removed)   { ['removed'] }
-        let (:rm_exists) { true }
+        let (:added)            { { :event => :added, :path => 'added' } }
+        let (:modified)         { { :event => :modified, :path => 'modified'} }
+        let (:removed_exists)   { { :event => :removed, :path => 'removed_exists'}}
+        let (:removed_remvd)    { { :event => :removed, :path => 'removed_remvd'}}
 
         before (:each) do
           queue.stub(:pop).and_return(
-            { :added => added, :modified => modified, :removed => removed },
-            { :added => added, :modified => modified, :removed => removed },
-            { :quit => true })
-          File.stub(:exists?).with("#{env[:root_path]}/removed").and_return(rm_exists)
+            added,
+            modified,
+            removed_exists,
+            removed_remvd,
+            { :quit => true }
+          )
+
+          File.stub(:exists?).with("#{env[:root_path]}/removed_exists").and_return(true)
+          File.stub(:exists?).with("#{env[:root_path]}/removed_remvd").and_return(false)
         end
 
         it "runs rsync one by one for each added and modified file" do
           rsync.should_receive(:run).with("added")
           rsync.should_receive(:run).with("modified")
-          rsync.should_receive(:run).with("modified2")
 
           subject.call(env)
           sleep 0.2
         end
 
-        # Sometimes Guard flags a file as deleted that still exists - during certain types of
-        # atomic file writes, we think. So we should delete the file remotely if so, or sync if not.
-        context "if deleted files have been deleted" do
-          let (:rm_exists) { false }
+        it "deletes files by SSH if they have been deleted on the host" do
+          channel.should_receive(:sudo).with('rm /var/guest/removed_remvd')
 
-          it "deletes them by SSH" do
-            channel.should_receive(:sudo).with('rm /var/guest/removed')
-
-            subject.call(env)
-            sleep 0.2
-          end
+          subject.call(env)
+          sleep 0.2
         end
 
-        context "if deleted files have not been deleted" do
-          let (:rm_exists) { true }
+        it "runs rsync to update deleted files if they still exist on the host" do
+          rsync.should_receive(:run).with('removed_exists')
 
-          it "runs rsync on the file" do
-            rsync.should_receive(:run).with('removed')
-
-            subject.call(env)
-            sleep 0.2
-          end
+          subject.call(env)
+          sleep 0.2
         end
-
       end
 
       shared_examples "finishing mirroring" do
