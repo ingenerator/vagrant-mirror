@@ -55,6 +55,10 @@ module Vagrant
                   if (change[:quit])
                     quit = true
                   else
+                    # Ignore files that match the configured exclude paths
+                    if exclude?(change[:path], mirror_config)
+                      next
+                    end
 
                     # Handle removed files first - guard sometimes flagged as deleted when they aren't
                     # So we first check if the file has been deleted on the host. If so, we delete on
@@ -106,6 +110,71 @@ module Vagrant
           ui.success("Completed directory synchronisation")
         end
 
+        # Checks whether a given path should be excluded based on the :exclude config for this mirror
+        #
+        # @param [String] The file path being processed
+        # @param [Hash]   The mirror config options
+        #
+        # @return [Bool]  Whether to exclude this file
+        def exclude?(path, mirror_config)
+          compiled_excludes = mirror_config.fetch(:compiled_excludes, {})
+          excluded = false
+
+          mirror_config[:exclude].each do | exclude |
+            # Check if it has been compiled
+            unless compiled_excludes.has_key? exclude
+              compiled_excludes[exclude] = compile_exclude(exclude)
+            end
+            exclude = compiled_excludes[exclude]
+
+            # Test for a match against the path
+            if exclude.match(path)
+              excluded = true
+              break
+            end
+          end
+
+          # Return the result
+          excluded
+        end
+
+        # Mirrors the folder pairs configured in the vagrantfile
+        #
+        # @param [String] A glob-style exclude format
+        #
+        # @return [Regexp] The exclude path as a regex
+        def compile_exclude(exclude)
+          exclude = exclude.dup
+
+          # Absolute path is tied to start of string, relative to any directory separator
+          if exclude.chars.first == '/'
+            regex = "^"
+            exclude[0] = ''
+          else
+            regex = "(^|/)"
+          end
+
+          # Temporarily convert wildcards to placeholders
+          exclude.sub!('**','<<globwild2>>')
+          exclude.sub!('*','<<globwild>>')
+
+          # Escape the string for regexp characters
+          exclude = Regexp.escape(exclude)
+
+
+          # one star matches anything except directories
+          exclude.sub!('<<globwild>>', '[^/]*?')
+
+          # two stars match anything including directories
+          exclude.sub!('<<globwild2>>','.*?')
+
+          regex << exclude
+
+          # pattern should always end on a directory separator or end of string
+          regex << '($|/)'
+
+          Regexp.new(regex)
+        end
       end
     end
   end

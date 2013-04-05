@@ -54,9 +54,10 @@ describe Vagrant::Mirror::Middleware::Mirror do
     end
 
     context "with a mirrored folder" do
+      let ( :mirror_options ) { {} }
 
       before (:each) do
-        config.mirror.vagrant_root '/var/guest'
+        config.mirror.vagrant_root '/var/guest', mirror_options
         config.vm.share_folder("v-root", "/vagrant", ".")
       end
 
@@ -161,6 +162,78 @@ describe Vagrant::Mirror::Middleware::Mirror do
           subject.call(env)
           sleep 0.2
         end
+      end
+
+      context "with notifications in the queue when exclude paths are configured" do
+        let (:mirror_options) { { :exclude => [ "/docs", "cache", "*.png", "dir*", "/vendor/**/test"] } }
+
+        # For these tests we want to know about unexpected calls
+        let (:rsync)          { double("Vagrant::Mirror::Rsync") }
+
+        it "correctly filters absolute paths within the sync folder" do
+          queue.stub(:pop).and_return(
+            { :event => :added, :path => "docs/should/ignore.fl" },
+            { :event => :added, :path => "should/not/ignore/docs.txt" },
+            { :quit => true })
+
+          rsync.should_receive(:run).with('should/not/ignore/docs.txt')
+
+          subject.call(env)
+          sleep 0.2
+        end
+
+        it "correctly filters named directories within the sync folder" do
+          queue.stub(:pop).and_return(
+            { :event => :added, :path => "cache/should/ignore.fl" },
+            { :event => :added, :path => "should/cache/ignore.fl" },
+            { :event => :added, :path => "cacheit/should/not/ignore.fl" },
+            { :quit => true })
+
+          rsync.should_receive(:run).with('cacheit/should/not/ignore.fl')
+
+          subject.call(env)
+          sleep 0.2
+        end
+
+        it "correctly filters filename wildcards" do
+          queue.stub(:pop).and_return(
+            { :event => :added, :path => "ignore.png" },
+            { :event => :added, :path => "should/ignore.png" },
+            { :event => :added, :path => "should/not/png/ignore.txt" },
+            { :quit => true })
+
+          rsync.should_receive(:run).with('should/not/png/ignore.txt')
+
+          subject.call(env)
+          sleep 0.2
+        end
+
+        it "correctly filters glob patterns with *" do
+          queue.stub(:pop).and_return(
+            { :event => :added, :path => "dir1/should/ignore.fl" },
+            { :event => :added, :path => "should/dirignore/this.tst" },
+            { :event => :added, :path => "should/notdir/ignore.tst" },
+            { :quit => true })
+
+          rsync.should_receive(:run).with('should/notdir/ignore.tst')
+
+          subject.call(env)
+          sleep 0.2
+        end
+
+        it "correctly filters glob patterns with **" do
+          queue.stub(:pop).and_return(
+            { :event => :added, :path => "vendor/my/test/file.tst" },
+            { :event => :added, :path => "vendor/my/deep/test/file.tst" },
+            { :event => :added, :path => "vendor/test/file.tst" },
+            { :quit => true })
+
+          rsync.should_receive(:run).with('vendor/test/file.tst')
+
+          subject.call(env)
+          sleep 0.2
+        end
+
       end
 
       shared_examples "finishing mirroring" do
