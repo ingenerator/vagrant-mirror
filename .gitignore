@@ -18,3 +18,4 @@ tmp/
 
 # Don't include Gemfile.lock in gems
 Gemfile.lock
+pkg/

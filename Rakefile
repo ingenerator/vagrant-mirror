@@ -1,5 +1,14 @@
 #!/usr/bin/env rake
-require 'bundler/gem_tasks'
+require 'rubygems'
+require 'bundler/setup'
+require 'rspec/core/rake_task'
+
+# Change to the directory of this file.
+Dir.chdir(File.expand_path("../", __FILE__))
+
+# This installs the tasks that help with gem creation and
+# publishing.
+Bundler::GemHelper.install_tasks
 
 desc "Open an irb session preloaded with vagrant-mirror"
 task :console do
