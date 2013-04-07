@@ -1,6 +1,7 @@
 # Vagrant::Mirror
 
 [![Build Status](https://travis-ci.org/ingenerator/vagrant-mirror.png)](https://travis-ci.org/ingenerator/vagrant-mirror)
+[![Coverage Status](https://coveralls.io/repos/ingenerator/vagrant-mirror/badge.png?branch=master)](https://coveralls.io/r/ingenerator/vagrant-mirror)
 [![Gem Version](https://badge.fury.io/rb/vagrant-mirror.png)](http://badge.fury.io/rb/vagrant-mirror)
 [![Code Climate](https://codeclimate.com/github/ingenerator/vagrant-mirror.png)](https://codeclimate.com/github/ingenerator/vagrant-mirror)
 [![Dependency Status](https://gemnasium.com/ingenerator/vagrant-mirror.png)](https://gemnasium.com/ingenerator/vagrant-mirror)

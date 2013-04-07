@@ -8,4 +8,5 @@ group :development do
   gem 'rb-fsevent', :require => false
   gem 'rb-fchange', :require => false
   gem 'wdm',        :require => false, :platforms => [:mswin, :mingw]
+  gem 'coveralls',  :require => false
 end
