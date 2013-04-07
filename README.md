@@ -1,7 +1,9 @@
 # Vagrant::Mirror
 
 [![Build Status](https://travis-ci.org/ingenerator/vagrant-mirror.png)](https://travis-ci.org/ingenerator/vagrant-mirror)
+[![Gem Version](https://badge.fury.io/rb/vagrant-mirror.png)](http://badge.fury.io/rb/vagrant-mirror)
 [![Code Climate](https://codeclimate.com/github/ingenerator/vagrant-mirror.png)](https://codeclimate.com/github/ingenerator/vagrant-mirror)
+[![Dependency Status](https://gemnasium.com/ingenerator/vagrant-mirror.png)](https://gemnasium.com/ingenerator/vagrant-mirror)
 
 **This plugin is for the 1.0.x series of Vagrant and has not been updated to work with 1.1 and
 above. We plan to update it eventually, if you want it faster than that then contributions are
