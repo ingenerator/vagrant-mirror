@@ -165,7 +165,7 @@ describe Vagrant::Mirror::Middleware::Mirror do
       end
 
       context "with notifications in the queue when exclude paths are configured" do
-        let (:mirror_options) { { :exclude => [ "/docs", "cache", "*.png", "dir*", "/vendor/**/test"] } }
+        let (:mirror_options) { { :exclude => [ "/docs", "cache", "*.png", "dir*", "/vendor/**/test", "*_bak_*", "**_tmp_**"] } }
 
         # For these tests we want to know about unexpected calls
         let (:rsync)          { double("Vagrant::Mirror::Rsync") }
@@ -213,6 +213,7 @@ describe Vagrant::Mirror::Middleware::Mirror do
             { :event => :added, :path => "dir1/should/ignore.fl" },
             { :event => :added, :path => "should/dirignore/this.tst" },
             { :event => :added, :path => "should/notdir/ignore.tst" },
+            { :event => :added, :path => "should/notdir/ignore.tst__bak__" },
             { :quit => true })
 
           rsync.should_receive(:run).with('should/notdir/ignore.tst')
@@ -226,6 +227,7 @@ describe Vagrant::Mirror::Middleware::Mirror do
             { :event => :added, :path => "vendor/my/test/file.tst" },
             { :event => :added, :path => "vendor/my/deep/test/file.tst" },
             { :event => :added, :path => "vendor/test/file.tst" },
+            { :event => :added, :path => "should/not_tmp_/file.tst" },
             { :quit => true })
 
           rsync.should_receive(:run).with('vendor/test/file.tst')

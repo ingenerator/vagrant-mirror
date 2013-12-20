@@ -139,18 +139,18 @@ module Vagrant
           end
 
           # Temporarily convert wildcards to placeholders
-          exclude.sub!('**','<<globwild2>>')
-          exclude.sub!('*','<<globwild>>')
+          exclude.gsub!('**','<<globwild2>>')
+          exclude.gsub!('*','<<globwild>>')
 
           # Escape the string for regexp characters
           exclude = Regexp.escape(exclude)
 
 
           # one star matches anything except directories
-          exclude.sub!('<<globwild>>', '[^/]*?')
+          exclude.gsub!('<<globwild>>', '[^/]*?')
 
           # two stars match anything including directories
-          exclude.sub!('<<globwild2>>','.*?')
+          exclude.gsub!('<<globwild2>>','.*?')
 
           regex << exclude
 
