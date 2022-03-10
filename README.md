@@ -1,3 +1,7 @@
+# Abandoned project
+
+**This project is abandoned and will no longer be maintained**
+
 # Vagrant::Mirror
 
 [![Build Status](https://travis-ci.org/ingenerator/vagrant-mirror.png)](https://travis-ci.org/ingenerator/vagrant-mirror)
@@ -7,8 +11,7 @@
 [![Dependency Status](https://gemnasium.com/ingenerator/vagrant-mirror.png)](https://gemnasium.com/ingenerator/vagrant-mirror)
 
 **This plugin is for the 1.0.x series of Vagrant and has not been updated to work with 1.1 and
-above. We plan to update it eventually, if you want it faster than that then contributions are
-welcome!**
+above.**
 
 A vagrant plugin that mirrors a folder from host to guest, designed to get around the performance
 issues of virtualbox shared folders and the headaches of NFS or Samba shares with a windows host and
